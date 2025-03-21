@@ -1,78 +1,39 @@
-import { useEffect } from 'react'
 import styled from 'styled-components'
-import { usePrivy } from '@privy-io/react-auth'
-import { useNavigate } from 'react-router-dom'
+import '@reown/appkit-ui/jsx'
 
 const CollectionContainer = styled.div`
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 `
 
 const Title = styled.h1`
+  color: #ffd700;
   margin-bottom: 2rem;
   text-align: center;
 `
 
-const CardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2rem;
-  padding: 1rem;
-`
-
-const Card = styled.div`
+const ConnectPrompt = styled.div`
+  text-align: center;
+  padding: 2rem;
   background-color: #2a2a2a;
   border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: translateY(-5px);
-  }
+  margin-top: 2rem;
 `
 
-const CardImage = styled.div`
-  width: 150px;
-  height: 200px;
-  background-color: #3a3a3a;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+const ConnectMessage = styled.p`
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
 `
 
-const CardName = styled.h3`
-  margin: 0;
-  color: #ffd700;
-`
-
-const Collection = () => {
-  const { authenticated } = usePrivy()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!authenticated) {
-      navigate('/')
-    }
-  }, [authenticated, navigate])
-
-  // Placeholder data - will be replaced with actual NFT data
-  const placeholderCards = Array(6).fill({
-    name: 'Fusion Card',
-    image: '',
-  })
-
+function Collection() {
   return (
     <CollectionContainer>
       <Title>Your Card Collection</Title>
-      <CardGrid>
-        {placeholderCards.map((card, index) => (
-          <Card key={index}>
-            <CardImage />
-            <CardName>{card.name} #{index + 1}</CardName>
-          </Card>
-        ))}
-      </CardGrid>
+      <ConnectPrompt>
+        <ConnectMessage>Connect your wallet to view your collection</ConnectMessage>
+        <appkit-button />
+      </ConnectPrompt>
     </CollectionContainer>
   )
 }

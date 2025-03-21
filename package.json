@@ -11,7 +11,11 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@privy-io/react-auth": "^2.6.4",
+    "@reown/appkit": "^1.7.0",
+    "@reown/appkit-adapter-bitcoin": "^1.7.0",
+    "@reown/appkit-adapter-solana": "^1.7.0",
+    "@reown/appkit-adapter-wagmi": "^1.7.0",
+    "@solana/wallet-adapter-wallets": "^0.19.33",
     "@wagmi/core": "^2.6.5",
     "ethers": "^6.11.1",
     "phaser": "^3.80.1",
@@ -19,6 +23,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
     "styled-components": "^6.1.8",
+    "viem": "^2.23.13",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

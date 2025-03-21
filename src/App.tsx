@@ -1,6 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { PrivyProvider } from '@privy-io/react-auth'
+import { createAppKit } from '@reown/appkit'
+import { SolanaAdapter } from '@reown/appkit-adapter-solana'
+import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin'
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { mainnet, arbitrum, sepolia, solana, polygon, bitcoin } from '@reown/appkit/networks'
+import { SolflareWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets'
 import styled from 'styled-components'
+import '@reown/appkit-ui/jsx'
 
 // Components
 import Header from '@components/layout/Header'
@@ -11,8 +17,44 @@ import Home from '@pages/Home'
 import Game from '@pages/Game'
 import Collection from '@pages/Collection'
 
-// Privy app ID - Replace with your app ID
-const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || 'YOUR_PRIVY_APP_ID'
+// Get projectId from https://cloud.reown.com
+const projectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID'
+
+// Create the Wagmi adapter
+const wagmiAdapter = new WagmiAdapter({
+  ssr: true,
+  projectId,
+  networks: [mainnet, arbitrum, sepolia]
+})
+
+const bitcoinAdapter = new BitcoinAdapter({
+  projectId,
+  networks: [bitcoin]
+})
+
+// Create Solana adapter
+const solanaAdapter = new SolanaAdapter({
+  wallets: [new PhantomWalletAdapter() as any, new SolflareWalletAdapter() as any]
+})
+
+// Set up the metadata
+const metadata = {
+  name: 'Crypto Spire',
+  description: 'A roguelike deck-building game with blockchain integration',
+  url: window.location.origin,
+  icons: ['https://your-icon-url.com'] // Replace with your game's icon
+}
+
+// Create the AppKit instance
+createAppKit({
+  adapters: [wagmiAdapter, solanaAdapter, bitcoinAdapter],
+  networks: [polygon, solana, bitcoin],
+  metadata,
+  projectId,
+  features: {
+    analytics: true,
+  }
+})
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -22,16 +64,7 @@ const AppContainer = styled.div`
 
 function App() {
   return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        loginMethods: ['wallet'],
-        appearance: {
-          theme: 'dark',
-          accentColor: '#ffd700',
-        },
-      }}
-    >
+    <>
       <GlobalStyles />
       <AppContainer>
         <Router>
@@ -43,7 +76,7 @@ function App() {
           </Routes>
         </Router>
       </AppContainer>
-    </PrivyProvider>
+    </>
   )
 }
 

@@ -1,6 +1,6 @@
-import styled from 'styled-components'
 import { Link } from 'react-router-dom'
-import { usePrivy } from '@privy-io/react-auth'
+import styled from 'styled-components'
+import '@reown/appkit-ui/jsx'
 
 const HeaderContainer = styled.header`
   display: flex;
@@ -8,12 +8,18 @@ const HeaderContainer = styled.header`
   align-items: center;
   padding: 1rem 2rem;
   background-color: #2a2a2a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `
 
-const Logo = styled.h1`
-  margin: 0;
-  color: #ffffff;
+const Logo = styled(Link)`
   font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-decoration: none;
+  
+  &:hover {
+    color: #ffed4a;
+  }
 `
 
 const Nav = styled.nav`
@@ -25,42 +31,21 @@ const Nav = styled.nav`
 const NavLink = styled(Link)`
   color: #ffffff;
   text-decoration: none;
+  font-weight: 500;
+  
   &:hover {
     color: #ffd700;
   }
 `
 
-const LoginButton = styled.button`
-  padding: 0.5rem 1rem;
-  background-color: #ffd700;
-  color: #1a1a1a;
-  border-radius: 4px;
-  font-weight: 600;
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-`
-
-const Header = () => {
-  const { login, authenticated, logout } = usePrivy()
-
+function Header() {
   return (
     <HeaderContainer>
-      <Logo>Crypto Spire</Logo>
+      <Logo to="/">Crypto Spire</Logo>
       <Nav>
-        <NavLink to="/">Home</NavLink>
-        {authenticated && (
-          <>
-            <NavLink to="/game">Play</NavLink>
-            <NavLink to="/collection">Collection</NavLink>
-            <LoginButton onClick={logout}>Disconnect</LoginButton>
-          </>
-        )}
-        {!authenticated && (
-          <LoginButton onClick={login}>Connect</LoginButton>
-        )}
+        <NavLink to="/game">Play</NavLink>
+        <NavLink to="/collection">Collection</NavLink>
+        <appkit-button />
       </Nav>
     </HeaderContainer>
   )

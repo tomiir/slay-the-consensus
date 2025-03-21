@@ -1,69 +1,40 @@
-import { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { usePrivy } from '@privy-io/react-auth'
 import { useNavigate } from 'react-router-dom'
+import '@reown/appkit-ui/jsx'
 
 const GameContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 `
 
-const NetworkSelection = styled.div`
-  display: flex;
-  gap: 1rem;
+const Title = styled.h1`
+  color: #ffd700;
   margin-bottom: 2rem;
+  text-align: center;
 `
 
-const NetworkButton = styled.button<{ selected?: boolean }>`
-  padding: 1rem 2rem;
-  background-color: ${props => props.selected ? '#ffd700' : '#2a2a2a'};
-  color: ${props => props.selected ? '#1a1a1a' : '#ffffff'};
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: ${props => props.selected ? '#ffd700' : '#3a3a3a'};
-  }
+const ConnectPrompt = styled.div`
+  text-align: center;
+  padding: 2rem;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  margin-top: 2rem;
 `
 
-const Game = () => {
-  const { authenticated } = usePrivy()
-  const navigate = useNavigate()
-  const [selectedNetwork, setSelectedNetwork] = useState<string>('')
+const ConnectMessage = styled.p`
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+`
 
-  useEffect(() => {
-    if (!authenticated) {
-      navigate('/')
-    }
-  }, [authenticated, navigate])
-
+function Game() {
   return (
     <GameContainer>
-      <h1>Choose Your Network Deck</h1>
-      <NetworkSelection>
-        <NetworkButton 
-          selected={selectedNetwork === 'ethereum'}
-          onClick={() => setSelectedNetwork('ethereum')}
-        >
-          Ethereum
-        </NetworkButton>
-        <NetworkButton 
-          selected={selectedNetwork === 'solana'}
-          onClick={() => setSelectedNetwork('solana')}
-        >
-          Solana
-        </NetworkButton>
-        <NetworkButton 
-          selected={selectedNetwork === 'bitcoin'}
-          onClick={() => setSelectedNetwork('bitcoin')}
-        >
-          Bitcoin
-        </NetworkButton>
-      </NetworkSelection>
+      <Title>Crypto Spire</Title>
+      <ConnectPrompt>
+        <ConnectMessage>Connect your wallet to start playing</ConnectMessage>
+        <appkit-button />
+      </ConnectPrompt>
     </GameContainer>
   )
 }
