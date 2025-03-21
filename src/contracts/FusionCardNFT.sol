@@ -26,34 +26,36 @@ contract FusionCardNFT is ERC721URIStorage, Ownable {
 
     constructor() ERC721("FusionCardNFT", "FUSION") Ownable(msg.sender) {}
 
-    modifier onlyGameServer() {
-        require(msg.sender == gameServerAddress, "Not authorized");
-        _;
-    }
-
+    // Only owner can set the game server address (for future admin functions)
     function setGameServerAddress(address _address) external onlyOwner {
         gameServerAddress = _address;
     }
 
+    // Anyone can mint their own starter cards
     function mintCard(
         address player,
         string memory name,
+        string memory description,
         string memory networkOrigin,
-        string[] memory parentCards,
         string memory cardType,
         string memory rarity,
         uint256 energy,
         string memory tokenURI
-    ) external onlyGameServer returns (uint256) {
+    ) external returns (uint256) {
+        // Player must be msg.sender or the game server
+        require(player == msg.sender || msg.sender == gameServerAddress, "Can only mint for yourself");
+        
         uint256 tokenId = _nextTokenId++;
 
         _safeMint(player, tokenId);
         _setTokenURI(tokenId, tokenURI);
 
+        string[] memory emptyParents = new string[](0);
+        
         cardMetadata[tokenId] = CardMetadata({
             name: name,
             networkOrigin: networkOrigin,
-            parentCards: parentCards,
+            parentCards: emptyParents,
             mintedAt: block.timestamp,
             cardType: cardType,
             rarity: rarity,
@@ -66,16 +68,20 @@ contract FusionCardNFT is ERC721URIStorage, Ownable {
         return tokenId;
     }
 
+    // Anyone can fuse their own cards
     function fuseCards(
         uint256[] memory parentTokenIds,
         string memory name,
         string memory tokenURI
-    ) external onlyGameServer returns (uint256) {
+    ) external returns (uint256) {
         require(parentTokenIds.length == 2, "Must provide exactly 2 parent cards");
 
-        // Verify ownership of parent cards
-        for (uint256 i = 0; i < parentTokenIds.length; i++) {
-            require(_exists(parentTokenIds[i]), "Parent card does not exist");
+        // Verify ownership of parent cards - only enforced for non-game-server
+        if (msg.sender != gameServerAddress) {
+            for (uint256 i = 0; i < parentTokenIds.length; i++) {
+                require(_exists(parentTokenIds[i]), "Parent card does not exist");
+                require(ownerOf(parentTokenIds[i]) == msg.sender, "You must own the parent cards");
+            }
         }
 
         uint256 tokenId = _nextTokenId++;

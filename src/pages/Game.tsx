@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '@reown/appkit-ui/jsx';
 import { Battle } from '../components/Battle';
 import { DeckSelection } from '../components/DeckSelection';
+import { FusionCardSelection } from '../components/FusionCardSelection';
 import { Card } from '../game/core/types';
 import { useAppKitAccount } from '@reown/appkit/react';
 
@@ -28,46 +29,55 @@ const ConnectMessage = styled.p`
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
+  const { address, isConnected } = useAppKitAccount();
   const [selectedDeck, setSelectedDeck] = useState<Card[] | null>(null);
-  const { status } = useAppKitAccount();
+  const [showFusionSelection, setShowFusionSelection] = useState(false);
+  const [battleResult, setBattleResult] = useState<'win' | 'lose' | null>(null);
 
   const handleDeckSelect = (deck: Card[]) => {
     setSelectedDeck(deck);
   };
 
-  const handleBattleEnd = (victory: boolean) => {
-    if (victory) {
-      // TODO: Handle victory rewards, fusion cards, etc.
-      alert('Congratulations! You won!');
-    } else {
-      alert('Game Over! Try again!');
+  const handleBattleComplete = (result: 'win' | 'lose') => {
+    setBattleResult(result);
+    if (result === 'win') {
+      setShowFusionSelection(true);
     }
-    setSelectedDeck(null);
   };
 
-  if (status !== 'connected') {
+  const handleFusionComplete = () => {
+    setShowFusionSelection(false);
+    setSelectedDeck(null);
+    setBattleResult(null);
+  };
+
+  if (!isConnected) {
     return (
-      <GameContainer>
-        <ConnectPrompt>
-          <ConnectMessage>Connect your wallet to start playing</ConnectMessage>
-          <appkit-button />
-        </ConnectPrompt>
-      </GameContainer>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        color: '#ffd700',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <h1>Welcome to Slay the Consensus</h1>
+        <p>Please connect your wallet to start playing!</p>
+      </div>
     );
   }
 
-  return (
-    <GameContainer>
-      {!selectedDeck ? (
-        <DeckSelection onStartGame={handleDeckSelect} />
-      ) : (
-        <Battle
-          deck={selectedDeck}
-          onBattleEnd={handleBattleEnd}
-        />
-      )}
-    </GameContainer>
-  );
+  if (showFusionSelection && selectedDeck) {
+    return <FusionCardSelection deck={selectedDeck} onComplete={handleFusionComplete} />;
+  }
+
+  if (!selectedDeck) {
+    return <DeckSelection onStartGame={handleDeckSelect} />;
+  }
+
+  return <Battle deck={selectedDeck} onComplete={handleBattleComplete} />;
 };
 
 export default Game;

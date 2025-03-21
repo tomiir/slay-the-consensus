@@ -99,10 +99,10 @@ const EndTurnButton = styled.button`
 
 interface BattleProps {
   deck: Card[];
-  onBattleEnd?: (victory: boolean) => void;
+  onComplete: (result: 'win' | 'lose') => void;
 }
 
-export const Battle: React.FC<BattleProps> = ({ deck, onBattleEnd }) => {
+export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
   const [battle, setBattle] = useState<BattleSystem>(new BattleSystem(deck));
   const [gameState, setGameState] = useState<GameState>(battle.getState());
 
@@ -112,7 +112,7 @@ export const Battle: React.FC<BattleProps> = ({ deck, onBattleEnd }) => {
       
       const result = battle.getBattleResult();
       if (result) {
-        onBattleEnd?.(result.victory);
+        handleBattleEnd(result.victory);
       }
     }
   };
@@ -123,8 +123,12 @@ export const Battle: React.FC<BattleProps> = ({ deck, onBattleEnd }) => {
     
     const result = battle.getBattleResult();
     if (result) {
-      onBattleEnd?.(result.victory);
+      handleBattleEnd(result.victory);
     }
+  };
+
+  const handleBattleEnd = (victory: boolean) => {
+    onComplete(victory ? 'win' : 'lose');
   };
 
   const calculateHealthPercentage = (current: number, max: number) => {
