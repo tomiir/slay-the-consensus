@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
-import '@reown/appkit-ui/jsx'
 
 const HeaderContainer = styled.header`
   display: flex;
