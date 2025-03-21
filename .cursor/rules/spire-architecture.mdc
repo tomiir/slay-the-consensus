@@ -1,0 +1,401 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Crypto Spire: Technical Architecture
+
+## 1. System Overview
+
+Crypto Spire is a roguelike deck-building game that combines traditional gameplay mechanics with blockchain elements. The system architecture is designed to separate core gameplay from blockchain interactions while ensuring a seamless user experience.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Game Client                           │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐   │
+│  │ Game Engine   │  │ UI Layer      │  │ Wallet        │   │
+│  │ (Unity/Phaser)│  │               │  │ Connector     │   │
+│  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘   │
+└─────────┬─────────────────┬─────────────────┬─────────────┘
+          │                 │                 │
+┌─────────▼─────────────────▼─────────────────▼─────────────┐
+│                         API Layer                          │
+└─────────┬─────────────────┬─────────────────┬─────────────┘
+          │                 │                 │
+┌─────────▼────────┐ ┌─────▼──────┐ ┌────────▼────────────┐
+│ Game Service     │ │ User Data  │ │ Blockchain Service  │
+│ - Game Logic     │ │ Service    │ │ - Signature         │
+│ - Card Mechanics │ │ - Profiles │ │   Verification      │
+│ - Run Generation │ │ - Progress │ │ - NFT Minting       │
+└──────────────────┘ └────────────┘ └─────────────────────┘
+```
+
+## 2. Core Components
+
+### 2.1 Frontend Components
+
+#### 2.1.1 Game Client
+- **Technology**: Web-based using React, Canvas/WebGL
+- **Responsibilities**:
+  - Render game UI and card visuals
+  - Handle user input
+  - Manage game state during runs
+  - Connect to wallets via Web3 providers
+
+#### 2.1.2 Key Frontend Modules
+- **Wallet Connector**
+  - Support for MetaMask, WalletConnect, and other EVM-compatible wallets
+  - Signature request and verification for network deck selection
+  - Management of connected wallet status
+  
+- **Game UI**
+  - Deck visualization and management
+  - Map navigation interface
+  - Combat view with card mechanics
+  - Animation system for card effects
+  
+- **Game State Manager**
+  - Local state management for active runs
+  - Card collection tracking
+  - Run progression
+
+### 2.2 Backend Components
+
+#### 2.2.1 API Layer
+- **Technology**: Node.js with Express or NestJS
+- **Responsibilities**:
+  - Provide REST endpoints for game operations
+  - Coordinate between game logic and blockchain services
+  - User authentication and session management
+
+#### 2.2.2 Game Service
+- **Technology**: Node.js microservice
+- **Responsibilities**:
+  - Core game logic implementation
+  - Card mechanic rules and interactions
+  - Procedural run generation
+  - Combat resolution
+  - AI for enemy behavior
+
+#### 2.2.3 User Data Service
+- **Technology**: MongoDB or PostgreSQL
+- **Responsibilities**:
+  - Store user profiles and preferences
+  - Track run history and statistics
+  - Manage card collections
+  - Leaderboard data
+
+#### 2.2.4 Blockchain Service
+- **Technology**: Ethereum-compatible blockchain (Polygon recommended), Ethers.js
+- **Responsibilities**:
+  - NFT smart contract interactions
+  - Fusion card minting
+  - On-chain achievement recording
+  
+#### 2.2.5 Signature Verification Service
+- **Technology**: Node.js, Ethers.js (for EVM chains), @solana/web3.js (for Solana signatures), etc.
+- **Responsibilities**:
+  - Verify signatures from different blockchain networks
+  - Store used signatures to prevent replay
+  - Map signatures to appropriate network decks
+
+## 3. Data Models
+
+### 3.1 Card Model
+```json
+{
+  "id": "string",
+  "name": "string",
+  "description": "string",
+  "networkOrigin": "string", // "ethereum", "solana", "bitcoin", "fusion"
+  "cardType": "string", // "attack", "skill", "power"
+  "rarity": "string", // "common", "uncommon", "rare"
+  "energy": "number",
+  "effects": [
+    {
+      "type": "string", // "damage", "block", "draw", etc.
+      "value": "number",
+      "target": "string" // "enemy", "self", "all", etc.
+    }
+  ],
+  "image": "string", // URL or IPFS hash
+  "isFusion": "boolean",
+  "parentCards": ["string"], // Only for fusion cards, IDs of parent cards
+  "metadata": "object" // Additional properties
+}
+```
+
+### 3.2 Deck Model
+```json
+{
+  "id": "string",
+  "name": "string",
+  "networkTheme": "string", // "ethereum", "solana", "bitcoin"
+  "baseCards": ["string"], // Array of card IDs in starter configuration
+  "description": "string",
+  "specialMechanics": ["string"] // Unique mechanics for this network deck
+}
+```
+
+### 3.3 Run Model
+```json
+{
+  "id": "string",
+  "userId": "string",
+  "selectedDeck": "string", // Deck ID
+  "currentCards": ["string"], // Array of card IDs in current run deck
+  "health": "number",
+  "maxHealth": "number",
+  "floor": "number",
+  "map": "object", // Map structure with nodes and paths
+  "currentNode": "string",
+  "completed": "boolean",
+  "victorious": "boolean",
+  "createdAt": "date",
+  "completedAt": "date"
+}
+```
+
+### 3.4 User Model
+```json
+{
+  "id": "string",
+  "walletAddress": "string",
+  "username": "string",
+  "fusionCards": ["string"], // Array of fusion card IDs owned
+  "runHistory": ["string"], // Array of run IDs
+  "achievements": ["string"],
+  "stats": {
+    "runsCompleted": "number",
+    "bossesDefeated": "number",
+    "cardsPlayed": "number",
+    "fusionCardsMinted": "number"
+  },
+  "createdAt": "date",
+  "lastLoginAt": "date"
+}
+```
+
+## 4. Smart Contract & Blockchain Integration
+
+### 4.1 FusionCardNFT Contract (Single Contract Required)
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract FusionCardNFT is ERC721URIStorage, Ownable {
+    struct CardMetadata {
+        string name;
+        string networkOrigin;
+        string[] parentCards;
+        uint256 mintedAt;
+    }
+    
+    mapping(uint256 => CardMetadata) public cardMetadata;
+    uint256 private _tokenIds;
+    address public gameServerAddress;
+    
+    event CardMinted(uint256 tokenId, address owner, string name);
+    
+    constructor() ERC721("CryptoSpireFusion", "CSF") {}
+    
+    modifier onlyGameServer() {
+        require(msg.sender == gameServerAddress, "Not authorized");
+        _;
+    }
+    
+    function setGameServerAddress(address _address) external onlyOwner {
+        gameServerAddress = _address;
+    }
+    
+    function mintCard(
+        address player,
+        string memory name,
+        string memory networkOrigin,
+        string[] memory parentCards,
+        string memory tokenURI
+    ) external onlyGameServer returns (uint256) {
+        _tokenIds++;
+        uint256 newTokenId = _tokenIds;
+        
+        _mint(player, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        
+        cardMetadata[newTokenId] = CardMetadata({
+            name: name,
+            networkOrigin: networkOrigin,
+            parentCards: parentCards,
+            mintedAt: block.timestamp
+        });
+        
+        emit CardMinted(newTokenId, player, name);
+        return newTokenId;
+    }
+}
+```
+
+### 4.2 Backend Signature Verification
+
+The signature verification will be handled by the backend service rather than a smart contract. This approach offers several advantages:
+
+```javascript
+// Example backend signature verification (Node.js with ethers.js)
+const ethers = require('ethers');
+
+async function verifyNetworkSignature(address, network, timestamp, signature) {
+  // Create the same message that was signed by the user
+  const message = `Select ${network} deck for Crypto Spire at ${timestamp}`;
+  
+  // Verify the signature against the provided address
+  const signerAddress = ethers.utils.verifyMessage(message, signature);
+  
+  // Check if the recovered address matches the claimed address
+  if (signerAddress.toLowerCase() !== address.toLowerCase()) {
+    throw new Error('Invalid signature');
+  }
+  
+  // Check if signature has been used before (using database)
+  const isUsed = await db.signatures.findOne({ signature });
+  if (isUsed) {
+    throw new Error('Signature already used');
+  }
+  
+  // Store the signature to prevent reuse
+  await db.signatures.insertOne({ 
+    signature, 
+    address, 
+    network, 
+    timestamp,
+    usedAt: new Date()
+  });
+  
+  return true;
+}
+
+// For other networks (e.g., Solana), we would implement different verification logic
+// but using the same API interface
+```
+
+This approach allows us to:
+1. Support multiple network signature formats
+2. Avoid unnecessary gas costs
+3. Provide immediate feedback to users
+4. Store signature usage in our database for tracking
+```
+
+## 5. API Endpoints
+
+### 5.1 Authentication & Wallet
+- `POST /auth/connect-wallet` - Connect wallet and sign in
+- `POST /auth/verify-network` - Verify network signature for deck selection
+- `GET /auth/user-profile` - Get current user profile and collection
+
+### 5.2 Game Management
+- `POST /game/start-run` - Start a new run with selected network deck
+- `GET /game/available-decks` - Get list of available network decks
+- `GET /game/my-fusion-cards` - Get user's fusion card collection
+
+### 5.3 Gameplay
+- `POST /game/generate-map` - Generate a new floor map
+- `GET /game/node/:nodeId` - Get details of a specific map node
+- `POST /game/combat/play-card` - Play a card during combat
+- `POST /game/combat/end-turn` - End current turn in combat
+- `POST /game/select-path` - Select a path on the map
+- `POST /game/rest` - Use a rest site to heal
+
+### 5.4 Fusion & NFTs
+- `POST /fusion/select-cards` - Select cards for fusion
+- `POST /fusion/mint` - Mint a new fusion card NFT
+- `GET /fusion/card/:cardId` - Get details of a fusion card
+
+## 6. Development Environment
+
+### 6.1 Tech Stack
+- **Frontend**: React, TypeScript, Web3.js/Ethers.js
+- **Game Engine**: Phaser.js or custom Canvas/WebGL
+- **Backend**: Node.js, Express/NestJS
+- **Database**: MongoDB or PostgreSQL
+- **Blockchain**: Polygon (or compatible testnet for development)
+- **DevOps**: Docker, GitHub Actions, Vercel/Netlify
+
+### 6.2 Development Workflow
+1. Local development with Mock blockchain service
+2. Integration testing with testnet
+3. Production deployment with mainnet contract
+
+### 6.3 Repository Structure
+```
+crypto-spire/
+├── client/               # Frontend application
+│   ├── src/
+│   │   ├── components/   # UI components
+│   │   ├── game/         # Game logic
+│   │   ├── blockchain/   # Wallet connection & blockchain
+│   │   └── assets/       # Images, sounds, etc.
+├── server/               # Backend services
+│   ├── src/
+│   │   ├── api/          # API routes
+│   │   ├── game/         # Game logic service
+│   │   ├── blockchain/   # Blockchain service
+│   │   ├── signatures/   # Signature verification services
+│   │   └── db/           # Database models & connection
+├── contracts/            # Smart contracts
+│   ├── src/
+│   │   └── FusionCardNFT.sol
+│   └── scripts/          # Deployment scripts
+└── docs/                 # Documentation
+```
+
+## 7. Implementation Phases
+
+### 7.1 Phase 1: Core Gameplay (Weeks 1-3)
+- Basic game engine setup
+- Card system implementation
+- Combat mechanics
+- Map generation
+
+### 7.2 Phase 2: Blockchain Integration (Weeks 4-5)
+- Wallet connection
+- Network signature verification
+- Smart contract deployment
+- Basic NFT minting
+
+### 7.3 Phase 3: Integration & Polish (Weeks 6-8)
+- Connect game mechanics with blockchain
+- Implement fusion card selection
+- UI/UX refinement
+- Testing and balance adjustments
+
+## 8. Security Considerations
+
+### 8.1 Client-Side Security
+- Prevent client-side manipulation of game state
+- Secure wallet connections
+- Validate all user inputs
+
+### 8.2 Server-Side Security
+- Authenticate all API requests
+- Robust signature verification for different blockchain networks
+- Prevention of signature replay attacks
+- Secure storage of used signatures
+- Rate limiting to prevent abuse
+
+### 8.3 Smart Contract Security
+- Use OpenZeppelin contracts for standard functionality
+- Implement access controls for minting functions
+- Consider having contracts audited before production
+
+## 9. Scalability Considerations
+
+### 9.1 Database Scalability
+- Index frequently queried fields
+- Consider sharding for user data
+- Implement caching for game assets and card data
+
+### 9.2 Blockchain Efficiency
+- Batch NFT minting operations when possible
+- Store minimal data on-chain, use IPFS for metadata
+- Optimize gas usage for contract interactions

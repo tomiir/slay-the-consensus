@@ -1,0 +1,240 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This is my project PRD:
+
+# Crypto Spire: Product Requirements Document
+
+## 1. Product Overview
+
+Crypto Spire is a roguelike deck-building game inspired by Slay the Spire that integrates blockchain technology. Players build card collections, construct decks, and battle through procedurally generated runs with permanent consequences. Unique cards discovered during gameplay become NFTs in the player's collection, with on-chain verification of game achievements and progress.
+
+### 1.1 Vision Statement
+
+To create an engaging roguelike deck-builder that meaningfully incorporates blockchain elements to enhance gameplay, ownership, and community without requiring cryptocurrency betting or excessive transaction costs.
+
+### 1.2 Target Audience
+
+- Fans of roguelike deck-builders (Slay the Spire, Monster Train)
+- Crypto enthusiasts interested in gaming applications
+- Collectors interested in digital ownership
+- Strategic card game players
+
+## 2. Core Game Mechanics
+
+### 2.1 Gameplay Loop
+
+1. **Connect Wallet**: Connect to a blockchain network (Solana, Ethereum, etc.)
+2. **Receive Network Deck**: Automatically receive a pre-built deck specific to the connected network
+3. **Enter the Spire**: Begin a procedurally generated run through the Spire
+3. **Battle Enemies**: Use cards to defeat enemies in turn-based combat
+4. **Make Choices**: Select paths, encounter events, and make decisions
+5. **Acquire Rewards**: Gain new cards, resources, and abilities
+6. **Progress or Perish**: Continue climbing or die and start over
+7. **Record Achievements**: Have run results and special achievements recorded on-chain
+
+### 2.2 Card System
+
+#### 2.2.1 Card System
+- **Network-Specific Starter Decks**: Themed pre-built decks selected by signing a message with different network wallets
+  - Example: Solana network deck features fast poison-based mechanics
+  - Example: Ethereum network deck focuses on combo/synergy mechanics
+  - Example: Bitcoin network deck emphasizes high-defense/value mechanics
+- **Standard Card Pool**: Non-NFT cards that can be added to decks during runs
+- **Fusion NFT Cards**: After defeating a boss, select 2 cards from your run deck to create a unique fusion NFT
+- **Fusion Card Collection**: Earned fusion NFTs appear as special rewards in future runs regardless of chosen network deck
+- **Progressive Cross-Chain Blend**: Over time, players can create fusion cards that blend mechanics from multiple networks
+
+#### 2.2.2 Card Mechanics
+- **Card Attributes**: Each card has name, type, effects, cost, and network origin
+- **Card Fusion**: After each successful run, two random cards from the player's deck fuse into a new NFT card
+- **Multi-chain Collection**: Players build collections of fusion cards from different networks over time
+
+### 2.3 Character Classes
+
+Three starter character classes representing major blockchain ecosystems:
+- **Bitcoin Miner**: Focus on high defense and steady, reliable damage
+- **Ethereum Builder**: Versatile with complex card combinations and synergies
+- **Solana Speedrunner**: Fast attacks, card draw, and chain reactions
+
+### 2.4 Game World
+
+- **The Crypto Spire**: A tower with multiple procedurally generated floors
+- **Themed Environments**: Different sections of the Spire represent different aspects of crypto culture
+- **Special Encounters**: Unique events that reference crypto history and concepts
+
+## 3. Blockchain Integration
+
+### 3.1 On-Chain Elements
+
+- **Single Blockchain Foundation**: All on-chain elements (fusion NFTs, leaderboards, etc.) deployed on a single blockchain for simplicity
+- **Network Signature Verification**: Players sign messages with different network wallets to select themed decks
+- **Fusion NFT Cards**: Special cards created after successful runs exist as NFTs on the blockchain
+- **Run Verification**: End-of-run stats and achievements recorded on-chain
+- **NFT Collection**: Player's fusion cards are stored in their wallet and available across all future runs
+
+### 3.2 Technical Requirements
+
+- **Blockchain**: Polygon (primary recommendation) for low fees and fast transactions
+- **Smart Contracts**: 
+  - Card Collection Management
+  - Run Verification and Recording
+  - Character Progression
+  - Leaderboard Management
+- **Wallet Integration**: Connect with common wallets (MetaMask, etc.)
+- **Transaction Batching**: Minimize blockchain interactions by batching state updates
+
+### 3.3 Player Ownership
+
+- Players fully own their card collections as NFTs
+- Cards can be traded, transferred, or sold on secondary markets
+- Special or rare cards discovered have true digital scarcity
+
+## 4. Game Economy & Card Collection
+
+### 4.1 Free-to-Play Approach
+
+- **Completely Free**: No purchases required to access all game content
+- **No Paid Card Packs**: All cards earned through gameplay
+- **No Premium Features**: Equal access for all players
+- **For-Fun Project**: Focus on enjoyment and community rather than monetization
+
+### 4.2 Card Ownership & Trading
+
+- **Community Trading**: Players can freely trade or gift NFT cards
+- **No Marketplace Fees**: No fees on card exchanges
+- **Open Source**: Potential for community-driven development
+
+## 5. User Experience
+
+### 5.1 Onboarding
+
+- **Wallet Connection**: Players connect their existing wallet to begin
+- **Network Detection**: Game automatically detects connected blockchain and provides appropriate starter deck
+- **Multi-Wallet Support**: Players can connect different wallets to access different network-specific cards
+- **Tutorial System**: Learn game mechanics and fusion system in guided introduction
+
+### 5.2 User Interface
+
+- **Card Management**: Easy browsing and organization of collection
+- **Deck Building**: Intuitive interface for constructing and saving decks
+- **Combat UI**: Clear presentation of game state and card interactions
+- **Blockchain Integration**: Seamless connection between game actions and blockchain elements
+
+### 5.3 Accessibility
+
+- **Blockchain Complexity Hiding**: Abstract technical details when not needed
+- **Transaction Explanations**: Clear information on when and why blockchain transactions occur
+- **Low-Gas Design**: Minimize frequency and cost of necessary transactions
+
+## 6. Technical Architecture
+
+### 6.1 Platform Support
+
+- **Initial Launch**: PC (Windows, Mac)
+- **Planned Expansion**: Mobile (iOS, Android)
+- **Web Version**: Browser-based option for maximum accessibility
+
+### 6.2 Backend Systems
+
+- **Game Server**: Handles real-time gameplay, matchmaking, and temporary state
+- **Blockchain Node**: Connects to Polygon network for transaction submission
+- **Content Delivery**: Serves game assets and updates
+- **Analytics**: Tracks game metrics and player behavior
+
+### 6.3 Data Management
+
+- **On-Chain Data**: Card ownership, run results, achievements
+- **Off-Chain Data**: Temporary game state, user preferences, non-critical data
+- **IPFS Storage**: Card art and metadata stored on IPFS with blockchain references
+
+## 7. Development Roadmap
+
+### 7.1 MVP (1-2 months)
+- Core gameplay mechanics
+- Single blockchain for all on-chain elements
+- Message signing for network deck selection
+- Three network-themed starter decks
+- Basic battle system and rest sites
+- Simple map generation with branching paths (5-10 battles per floor)
+- Boss battles with fusion NFT creation
+- PC platform only
+
+### 7.2 Phase 2: Expansion (2-3 months)
+- Additional encounter types (beyond battles and rest sites)
+- Expanded card sets
+- Enhanced map generation
+- Improved visual effects
+- Additional network-themed decks
+
+### 7.3 Phase 3: Community Features (2-3 months)
+- Leaderboards
+- Daily challenges
+- Achievements system
+- Community events
+- Potentially mobile support
+
+## 8. Success Metrics
+
+### 8.1 Player Engagement
+
+- Daily active users
+- Average session length
+- Retention rates (1-day, 7-day, 30-day)
+- Cards collected per user
+
+### 8.2 Blockchain Activity
+
+- Wallet connections
+- NFT minting activity
+- Secondary market volume
+- Run verifications recorded
+
+### 8.3 Business Performance
+
+- Revenue per user
+- Customer acquisition cost
+- Marketing conversion rates
+- Net promoter score
+
+## 9. Risks and Mitigations
+
+### 9.1 Technical Risks
+
+- **Blockchain Congestion**: Implement transaction batching and off-chain state management
+- **Gas Cost Fluctuations**: Design for minimal required transactions
+- **Wallet Integration Issues**: Support multiple wallet options with fallback mechanisms
+
+### 9.2 Market Risks
+
+- **Crypto Market Volatility**: Minimize dependency on specific token values
+- **Regulatory Uncertainty**: Avoid gambling mechanics and ensure compliance with gaming regulations
+- **Player Adoption Barriers**: Provide crypto-optional gameplay with gradual blockchain integration
+
+### 9.3 Game Design Risks
+
+- **Balance Issues**: Implement thorough testing and balancing of card mechanics
+- **Content Exhaustion**: Plan for regular content updates and procedural generation
+- **Player Retention**: Design compelling progression systems and seasonal content
+
+## 10. Future Considerations
+
+### 10.1 Community Features
+
+- Player guilds and alliances
+- Community challenges and events
+- User-generated content and card designs
+
+### 10.2 Expansion Opportunities
+
+- Cross-game asset compatibility
+- Competitive tournament system
+- Collaborative raid-style content
+
+### 10.3 Technology Evolution
+
+- Layer 2 scaling solutions as they mature
+- Cross-chain functionality
+- AI-enhanced procedural content generation
