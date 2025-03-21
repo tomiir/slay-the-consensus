@@ -2,8 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { createAppKit } from '@reown/appkit'
 import { SolanaAdapter } from '@reown/appkit-adapter-solana'
 import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin'
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet, arbitrum, sepolia, solana, polygon, bitcoin } from '@reown/appkit/networks'
+import { EthersAdapter } from '@reown/appkit-adapter-ethers'
+import { solana, polygon, bitcoin } from '@reown/appkit/networks'
 import { SolflareWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets'
 import styled from 'styled-components'
 import '@reown/appkit-ui/jsx'
@@ -21,11 +21,7 @@ import Collection from '@pages/Collection'
 const projectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID'
 
 // Create the Wagmi adapter
-const wagmiAdapter = new WagmiAdapter({
-  ssr: true,
-  projectId,
-  networks: [mainnet, arbitrum, sepolia]
-})
+const ethersAdapter = new EthersAdapter()
 
 const bitcoinAdapter = new BitcoinAdapter({
   projectId,
@@ -47,7 +43,7 @@ const metadata = {
 
 // Create the AppKit instance
 createAppKit({
-  adapters: [wagmiAdapter, solanaAdapter, bitcoinAdapter],
+  adapters: [ethersAdapter, solanaAdapter, bitcoinAdapter],
   networks: [polygon, solana, bitcoin],
   metadata,
   projectId,

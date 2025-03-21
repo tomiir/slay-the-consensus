@@ -3,52 +3,38 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract FusionCardNFT is ERC721URIStorage, Ownable {
-    using Strings for uint256;
+    uint256 private _nextTokenId;
 
     struct CardMetadata {
         string name;
         string networkOrigin;
         string[] parentCards;
         uint256 mintedAt;
-        string cardType; // "attack", "skill", "power"
-        string rarity; // "common", "uncommon", "rare"
+        string cardType;
+        string rarity;
         uint256 energy;
     }
-    
+
     mapping(uint256 => CardMetadata) public cardMetadata;
-    uint256 private _tokenIds;
+    mapping(address => uint256[]) public cardsOwnedBy;
     address public gameServerAddress;
-    
-    event CardMinted(
-        uint256 indexed tokenId, 
-        address indexed owner, 
-        string name,
-        string networkOrigin,
-        string cardType,
-        string rarity
-    );
-    
-    event CardFused(
-        uint256 indexed newTokenId,
-        uint256[] parentTokenIds,
-        address indexed owner
-    );
-    
-    constructor() ERC721("CryptoSpireFusion", "CSF") Ownable(msg.sender) {}
-    
+
+    event CardMinted(uint256 tokenId, address owner, string name);
+    event CardFused(uint256 newTokenId, uint256[] parentTokenIds);
+
+    constructor() ERC721("FusionCardNFT", "FUSION") Ownable(msg.sender) {}
+
     modifier onlyGameServer() {
-        require(msg.sender == gameServerAddress, "Not authorized: only game server can call this function");
+        require(msg.sender == gameServerAddress, "Not authorized");
         _;
     }
-    
+
     function setGameServerAddress(address _address) external onlyOwner {
         gameServerAddress = _address;
-        emit GameServerUpdated(_address);
     }
-    
+
     function mintCard(
         address player,
         string memory name,
@@ -59,13 +45,12 @@ contract FusionCardNFT is ERC721URIStorage, Ownable {
         uint256 energy,
         string memory tokenURI
     ) external onlyGameServer returns (uint256) {
-        _tokenIds++;
-        uint256 newTokenId = _tokenIds;
-        
-        _mint(player, newTokenId);
-        _setTokenURI(newTokenId, tokenURI);
-        
-        cardMetadata[newTokenId] = CardMetadata({
+        uint256 tokenId = _nextTokenId++;
+
+        _safeMint(player, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+
+        cardMetadata[tokenId] = CardMetadata({
             name: name,
             networkOrigin: networkOrigin,
             parentCards: parentCards,
@@ -74,112 +59,75 @@ contract FusionCardNFT is ERC721URIStorage, Ownable {
             rarity: rarity,
             energy: energy
         });
-        
-        emit CardMinted(newTokenId, player, name, networkOrigin, cardType, rarity);
-        return newTokenId;
+
+        cardsOwnedBy[player].push(tokenId);
+
+        emit CardMinted(tokenId, player, name);
+        return tokenId;
     }
 
     function fuseCards(
-        uint256[] memory tokenIds,
-        string memory newName,
-        string memory newTokenURI
-    ) external returns (uint256) {
-        require(tokenIds.length == 2, "Must fuse exactly 2 cards");
-        
-        // Check ownership of both cards
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(ownerOf(tokenIds[i]) == msg.sender, "Must own all cards to fuse");
+        uint256[] memory parentTokenIds,
+        string memory name,
+        string memory tokenURI
+    ) external onlyGameServer returns (uint256) {
+        require(parentTokenIds.length == 2, "Must provide exactly 2 parent cards");
+
+        // Verify ownership of parent cards
+        for (uint256 i = 0; i < parentTokenIds.length; i++) {
+            require(_exists(parentTokenIds[i]), "Parent card does not exist");
         }
-        
-        // Create parent cards array for the new card
-        string[] memory parentCards = new string[](tokenIds.length);
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            parentCards[i] = cardMetadata[tokenIds[i]].name;
+
+        uint256 tokenId = _nextTokenId++;
+
+        // Create parent card IDs array for metadata
+        string[] memory parentCardIds = new string[](parentTokenIds.length);
+        for (uint256 i = 0; i < parentTokenIds.length; i++) {
+            parentCardIds[i] = string(abi.encodePacked(parentTokenIds[i]));
         }
-        
-        // Burn the parent cards
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            _burn(tokenIds[i]);
+
+        // Calculate new card properties based on parent cards
+        CardMetadata memory parent1 = cardMetadata[parentTokenIds[0]];
+        CardMetadata memory parent2 = cardMetadata[parentTokenIds[1]];
+
+        // Determine new rarity (highest of parents)
+        string memory newRarity = parent1.rarity;
+        if (keccak256(bytes(parent2.rarity)) > keccak256(bytes(parent1.rarity))) {
+            newRarity = parent2.rarity;
         }
-        
-        // Mint new fused card
-        _tokenIds++;
-        uint256 newTokenId = _tokenIds;
-        
-        _mint(msg.sender, newTokenId);
-        _setTokenURI(newTokenId, newTokenURI);
-        
-        // Calculate new card properties
-        string memory networkOrigin = "fusion";
-        string memory rarity = determineNewRarity(tokenIds);
-        uint256 energy = calculateNewEnergy(tokenIds);
-        
-        cardMetadata[newTokenId] = CardMetadata({
-            name: newName,
-            networkOrigin: networkOrigin,
-            parentCards: parentCards,
+
+        // Calculate new energy (average of parents, rounded up)
+        uint256 newEnergy = (parent1.energy + parent2.energy + 1) / 2;
+
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+
+        cardMetadata[tokenId] = CardMetadata({
+            name: name,
+            networkOrigin: "fusion",
+            parentCards: parentCardIds,
             mintedAt: block.timestamp,
-            cardType: cardMetadata[tokenIds[0]].cardType, // Inherit from first parent
-            rarity: rarity,
-            energy: energy
+            cardType: parent1.cardType, // Inherit card type from first parent
+            rarity: newRarity,
+            energy: newEnergy
         });
-        
-        emit CardFused(newTokenId, tokenIds, msg.sender);
-        return newTokenId;
+
+        cardsOwnedBy[msg.sender].push(tokenId);
+
+        emit CardFused(tokenId, parentTokenIds);
+        return tokenId;
     }
-    
-    function determineNewRarity(uint256[] memory tokenIds) internal view returns (string memory) {
-        // Simple rarity upgrade logic
-        bool allSameRarity = true;
-        string memory firstRarity = cardMetadata[tokenIds[0]].rarity;
-        
-        for (uint256 i = 1; i < tokenIds.length; i++) {
-            if (keccak256(bytes(cardMetadata[tokenIds[i]].rarity)) != keccak256(bytes(firstRarity))) {
-                allSameRarity = false;
-                break;
-            }
-        }
-        
-        if (allSameRarity) {
-            if (keccak256(bytes(firstRarity)) == keccak256(bytes("common"))) {
-                return "uncommon";
-            } else if (keccak256(bytes(firstRarity)) == keccak256(bytes("uncommon"))) {
-                return "rare";
-            }
-        }
-        
-        return firstRarity; // Default to keeping the same rarity
-    }
-    
-    function calculateNewEnergy(uint256[] memory tokenIds) internal view returns (uint256) {
-        // Simple energy calculation: average of parents + 1
-        uint256 totalEnergy = 0;
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            totalEnergy += cardMetadata[tokenIds[i]].energy;
-        }
-        return (totalEnergy / tokenIds.length) + 1;
-    }
-    
-    // View functions
+
     function getCardMetadata(uint256 tokenId) external view returns (CardMetadata memory) {
         require(_exists(tokenId), "Card does not exist");
         return cardMetadata[tokenId];
     }
-    
+
     function getCardsOwnedBy(address player) external view returns (uint256[] memory) {
-        uint256 balance = balanceOf(player);
-        uint256[] memory tokens = new uint256[](balance);
-        uint256 index = 0;
-        
-        for (uint256 i = 1; i <= _tokenIds; i++) {
-            if (_exists(i) && ownerOf(i) == player) {
-                tokens[index] = i;
-                index++;
-            }
-        }
-        
-        return tokens;
+        return cardsOwnedBy[player];
     }
-    
-    event GameServerUpdated(address indexed newGameServer);
+
+    function _exists(uint256 tokenId) internal view returns (bool) {
+        return _ownerOf(tokenId) != address(0);
+    }
 } 

@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+Here are the docs to be used when integrating AppKit. 
+https://docs.reown.com/appkit/react/
+
+We are currently integrating multichain and using hooks

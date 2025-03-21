@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The nft contract is going to be thirdweb's OpenEdition ERC-721 contract using https://www.erc721a.org/

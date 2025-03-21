@@ -86,9 +86,7 @@ This prompt will guide you through sequential development of the MVP. Complete e
 ### Stage 3: Blockchain Integration
 
 #### Step 3.1: Implement Wallet Connection
-- Add wallet connection using Privy or Dynamic
-  - Privy offers simple embedded wallet creation and social logins
-  - Dynamic provides customizable auth flows with multi-wallet support
+- Add wallet connection using AppKit
 - Create account linking system
 - Implement multi-chain authentication
 - Set up session management
@@ -179,19 +177,7 @@ This prompt will guide you through sequential development of the MVP. Complete e
 
 ### Blockchain Integration
 
-- **Using Privy/Dynamic**: 
-  - Implement Privy or Dynamic for user-friendly wallet connection
-  - Privy advantages:
-    - Embedded wallet creation for non-crypto users
-    - Social login options (Google, email, etc.)
-    - Simple developer experience
-  - Dynamic advantages:
-    - More customizable UI
-    - Enterprise features
-    - Advanced multi-wallet support
-  - Consider user experience first when implementing wallet flows
-  - Create fallback options for users without wallets
-
+- Should use AppKit 
 - Abstract blockchain interactions behind service interfaces
 - Handle network errors gracefully
 - Implement transaction confirmation UI
