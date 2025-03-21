@@ -1,27 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { BattleSystem } from '../game/core/battle';
-import { Card, GameState } from '../game/core/types';
+import { Card, GameState, CardEffect, EffectType, EffectTarget } from '../game/core/types';
 import { GameCard } from './layout/GameCard';
 
 const BattleContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
   background: #121212;
-  color: white;
+  overflow: hidden;
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(28, 54, 83, 0.2) 0%, transparent 25%),
+    radial-gradient(circle at 80% 70%, rgba(75, 19, 79, 0.2) 0%, transparent 25%);
 `;
 
 const BattleField = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  position: relative;
+  padding: 2rem;
+  gap: 4rem;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 `;
 
 const CharacterStats = styled.div<{ isEnemy?: boolean }>`
@@ -107,38 +110,38 @@ const Hand = styled.div`
   position: relative;
 `;
 
-const CardWrapper = styled.div<{ disabled?: boolean, isPlayed?: boolean }>`
-  position: relative;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+const CardWrapper = styled.div<{ disabled: boolean; isPlayed: boolean }>`
+  transform: ${props => 
+    props.isPlayed 
+      ? 'scale(0.9) translateY(-20px)' 
+      : props.disabled 
+        ? 'translateY(15px)' 
+        : 'translateY(0)'
+  };
+  transition: transform 0.3s ease;
   opacity: ${props => props.disabled ? 0.6 : 1};
-  transform-origin: center bottom;
+  margin: 0 -15px;
+  position: relative;
   
-  ${props => props.isPlayed ? `
-    animation: playCardAnimation 1s forwards;
+  &:hover {
+    transform: ${props => 
+      props.disabled 
+        ? 'translateY(15px)' 
+        : 'translateY(-30px) scale(1.05)'
+    };
     z-index: 10;
-    
-    @keyframes playCardAnimation {
-      0% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-100px) scale(1.1) rotate(5deg); }
-      100% { transform: translateY(500px) scale(0.5) rotate(10deg); opacity: 0; }
-    }
-  ` : `
-    &:hover {
-      transform: ${props.disabled ? 'none' : 'translateY(-15px) scale(1.05)'};
-      z-index: 5;
-    }
-  `}
+  }
 `;
 
 const EnergyOverlay = styled.div<{ disabled: boolean }>`
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: ${props => props.disabled ? 'rgba(255, 0, 0, 0.3)' : 'transparent'};
-  border-radius: 10px;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  opacity: ${props => props.disabled ? 0.8 : 0};
   pointer-events: none;
   z-index: 2;
 `;
@@ -147,35 +150,31 @@ const EnergyDisplay = styled.div`
   position: fixed;
   top: 2rem;
   right: 2rem;
-  background: linear-gradient(135deg, #2c2c2c, #444444);
-  padding: 0.8rem 1.2rem;
-  border-radius: 30px;
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  padding: 0.8rem;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  justify-content: center;
+  color: #121212;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.3);
   z-index: 100;
+  transition: all 0.3s ease;
 `;
 
 const EnergyIcon = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffd700, #ffaa00);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  color: #333;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-size: 1.5rem;
+  margin-bottom: 0.2rem;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
 `;
 
 const EnergyText = styled.div`
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color: #ffd700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 `;
 
 const EndTurnButton = styled.button`
@@ -211,10 +210,10 @@ const DeckInfo = styled.div`
   bottom: 2rem;
   left: 2rem;
   background: linear-gradient(135deg, #2c2c2c, #444444);
-  padding: 0.8rem 1.2rem;
+  padding: 1rem 1.5rem;
   border-radius: 12px;
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   z-index: 100;
 `;
@@ -223,16 +222,21 @@ const DeckPile = styled.div<{ type: 'draw' | 'discard' }>`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
 `;
 
 const PileIcon = styled.div<{ type: 'draw' | 'discard' }>`
-  width: 40px;
-  height: 55px;
-  border-radius: 5px;
+  width: 50px;
+  height: 70px;
+  border-radius: 8px;
   background: ${props => props.type === 'draw' ? '#4169e1' : '#8b0000'};
   position: relative;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
   
   &::before {
     content: '';
@@ -244,17 +248,28 @@ const PileIcon = styled.div<{ type: 'draw' | 'discard' }>`
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 3px;
   }
+  
+  &::after {
+    content: '${props => props.type === 'draw' ? '↓' : '↑'}';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
 `;
 
 const PileCount = styled.div`
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: bold;
-  color: #cccccc;
+  color: #ffffff;
 `;
 
 const PileLabel = styled.div`
-  font-size: 0.8rem;
-  color: #999999;
+  font-size: 0.9rem;
+  color: #cccccc;
 `;
 
 const EnemyIntentContainer = styled.div`
@@ -300,10 +315,71 @@ const PlayedCardAnimation = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) rotate(5deg) scale(1.2);
   z-index: 10;
   perspective: 1000px;
   pointer-events: none;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  animation: cardPlay 0.8s forwards;
+  
+  @keyframes cardPlay {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(5deg) scale(1.2);
+    }
+    80% {
+      opacity: 0.8;
+      transform: translate(-50%, -20%) rotate(10deg) scale(1.3);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, 0%) rotate(15deg) scale(1.4);
+    }
+  }
+`;
+
+const PlayedCardContainer = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 5;
+  pointer-events: none;
+`;
+
+const PlayedCardsRow = styled.div<{ isEnemy?: boolean }>`
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  transform: ${props => props.isEnemy ? 'translateY(-150px)' : 'translateY(150px)'};
+`;
+
+const PlayedCardSmall = styled.div<{ cardType: string }>`
+  width: 100px;
+  height: 140px;
+  background: ${props => {
+    switch (props.cardType) {
+      case 'attack': return 'linear-gradient(135deg, #2d0000 0%, #570000 100%)';
+      case 'skill': return 'linear-gradient(135deg, #001e3c 0%, #003366 100%)';
+      case 'power': return 'linear-gradient(135deg, #1a0033 0%, #330066 100%)';
+      default: return '#2c2c2c';
+    }
+  }};
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  text-align: center;
+  opacity: 0.7;
 `;
 
 interface BattleProps {
@@ -316,6 +392,8 @@ export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
   const [gameState, setGameState] = useState<GameState>(battle.getState());
   const [playedCardIndex, setPlayedCardIndex] = useState<number | null>(null);
   const [playedCard, setPlayedCard] = useState<Card | null>(null);
+  const [playerPlayedCards, setPlayerPlayedCards] = useState<Card[]>([]);
+  const [enemyPlayedCards, setEnemyPlayedCards] = useState<Card[]>([]);
 
   const handlePlayCard = (cardIndex: number) => {
     const card = gameState.hand[cardIndex];
@@ -326,6 +404,9 @@ export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
     // Set the played card for animation
     setPlayedCardIndex(cardIndex);
     setPlayedCard(card);
+    
+    // Add to played cards history
+    setPlayerPlayedCards([...playerPlayedCards, card]);
     
     // Delay actual card play to allow for animation
     setTimeout(() => {
@@ -347,6 +428,42 @@ export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
   };
 
   const handleEndTurn = () => {
+    // Add enemy intent as a played card
+    if (gameState.enemyIntent) {
+      // Map enemy intent type to card effect type
+      const effectType: EffectType = 
+        gameState.enemyIntent.type === 'attack' ? 'damage' :
+        gameState.enemyIntent.type === 'defend' ? 'block' :
+        gameState.enemyIntent.type === 'buff' ? 'energy' : 'poison';
+        
+      // Determine appropriate target
+      const target: EffectTarget = 
+        gameState.enemyIntent.type === 'attack' ? 'self' : 'enemy';
+        
+      const enemyCard: Card = {
+        id: `enemy-${Date.now()}`,
+        name: gameState.enemyIntent.type === 'attack' ? 'Enemy Attack' : 
+              gameState.enemyIntent.type === 'defend' ? 'Enemy Defense' : 'Enemy Effect',
+        description: `${gameState.enemyIntent.type} for ${gameState.enemyIntent.value}`,
+        energy: 0,
+        cardType: gameState.enemyIntent.type === 'attack' ? 'attack' : 'skill',
+        rarity: 'common',
+        effects: [
+          {
+            type: effectType,
+            value: gameState.enemyIntent.value,
+            target: target
+          }
+        ],
+        networkOrigin: 'ethereum',
+        isFusion: false
+      };
+      setEnemyPlayedCards([...enemyPlayedCards, enemyCard]);
+    }
+    
+    // Clear player played cards for the new turn
+    setPlayerPlayedCards([]);
+    
     battle.endTurn();
     setGameState(battle.getState());
     
@@ -354,6 +471,11 @@ export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
     if (result) {
       handleBattleEnd(result.victory);
     }
+    
+    // Clear enemy played cards at the start of player turn
+    setTimeout(() => {
+      setEnemyPlayedCards([]);
+    }, 1500);
   };
 
   const handleBattleEnd = (victory: boolean) => {
@@ -416,6 +538,24 @@ export const Battle: React.FC<BattleProps> = ({ deck, onComplete }) => {
           </div>
         </CharacterStats>
       </BattleField>
+
+      <PlayedCardContainer>
+        <PlayedCardsRow isEnemy>
+          {enemyPlayedCards.map((card, index) => (
+            <PlayedCardSmall key={`enemy-${index}`} cardType={card.cardType}>
+              {card.name}
+            </PlayedCardSmall>
+          ))}
+        </PlayedCardsRow>
+        
+        <PlayedCardsRow>
+          {playerPlayedCards.map((card, index) => (
+            <PlayedCardSmall key={`player-${index}`} cardType={card.cardType}>
+              {card.name}
+            </PlayedCardSmall>
+          ))}
+        </PlayedCardsRow>
+      </PlayedCardContainer>
 
       <Hand>
         {gameState.hand.map((card, index) => (

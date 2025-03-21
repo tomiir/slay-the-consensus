@@ -168,13 +168,17 @@ const FusionCards = styled.div`
 interface FusionCardSelectionProps {
   deck: Card[];
   onComplete: () => void;
+  gold: number;
 }
 
-export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, onComplete }) => {
+export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, onComplete, gold }) => {
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [isMinting, setIsMinting] = useState(false);
   const [mintedCard, setMintedCard] = useState<Card | null>(null);
   const { mintFusionCard } = useBlockchainService();
+  
+  // Determine number of fusion options based on gold (min 1, max 3)
+  const maxFusionOptions = Math.min(3, Math.max(1, Math.floor(gold / 50)));
 
   const handleCardSelect = (card: Card) => {
     if (selectedCards.includes(card)) {
@@ -212,6 +216,8 @@ export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, 
       <Description>
         Select two cards from your deck to create a powerful fusion card. 
         Fusion cards combine the effects of both parent cards and are minted as NFTs on the blockchain.
+        <br /><br />
+        <strong>Gold: {gold} coins</strong> - You can select from {maxFusionOptions} fusion option{maxFusionOptions !== 1 ? 's' : ''}.
       </Description>
 
       {mintedCard ? (

@@ -443,34 +443,52 @@ export const DeckSelection: React.FC = () => {
 
   const handleStartGame = () => {
     if (selectedDeck) {
-      // Create a serializable version of the deck with only the necessary properties
+      console.log("Starting game with deck:", selectedDeck.id);
+      
+      // Create a fully serializable version of the deck with only the necessary properties
       const serializableDeck = {
-        ...selectedDeck,
-        cards: currentDeckCards.map(card => ({
-          id: card.id,
-          name: card.name,
-          description: card.description,
-          networkOrigin: card.networkOrigin,
-          cardType: card.cardType,
-          rarity: card.rarity,
-          energy: card.energy,
-          effects: card.effects.map(effect => ({
-            type: effect.type,
-            value: effect.value,
-            target: effect.target
-          })),
-          image: card.image,
-          isFusion: card.isFusion,
-          tokenId: card.tokenId,
-          parentCards: card.parentCards
-        }))
+        id: selectedDeck.id,
+        name: selectedDeck.name,
+        networkTheme: selectedDeck.networkTheme,
+        description: selectedDeck.description
       };
       
-      // Store the deck in localStorage as a fallback
-      localStorage.setItem('selectedDeck', JSON.stringify(serializableDeck));
+      // Create a serializable version of the cards
+      const serializableCards = currentDeckCards.map(card => ({
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        networkOrigin: card.networkOrigin,
+        cardType: card.cardType,
+        rarity: card.rarity,
+        energy: card.energy,
+        effects: card.effects.map(effect => ({
+          type: effect.type,
+          value: effect.value,
+          target: effect.target
+        })),
+        image: card.image || '',
+        isFusion: card.isFusion || false,
+        tokenId: card.tokenId || '',
+        parentCards: card.parentCards || []
+      }));
       
-      // Navigate with minimal state
-      navigate('/game', { state: { deckId: selectedDeck.id } });
+      // Store the deck in localStorage with cards
+      localStorage.setItem('selectedDeck', JSON.stringify({
+        ...serializableDeck,
+        cards: serializableCards
+      }));
+      console.log("Deck saved to localStorage");
+      
+      // Navigate with just the deckId in state to avoid DataCloneError
+      // The Game component will load the full deck from localStorage
+      navigate('/game', { 
+        state: { 
+          deckId: selectedDeck.id
+        } 
+      });
+    } else {
+      console.error("No deck selected");
     }
   };
 
