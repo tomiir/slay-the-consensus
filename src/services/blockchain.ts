@@ -1,15 +1,9 @@
-import { Card } from '../game/core/types';
+import { Card, CardEffect, EffectType, EffectTarget } from '../game/core/types';
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 import { ethers } from 'ethers';
 import FusionCardNFT from '../contracts/artifacts/src/contracts/FusionCardNFT.sol/FusionCardNFT.json';
 import { Provider } from '@reown/appkit-adapter-ethers';
 
-type EthereumProvider = {
-  request: (args: { method: string; params?: any[] }) => Promise<any>;
-  on: (eventName: string, handler: (args: any) => void) => void;
-  removeListener: (eventName: string, handler: (args: any) => void) => void;
-  isMetaMask?: boolean;
-};
 
 declare global {
   interface Window {
@@ -27,42 +21,6 @@ const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 if (!CONTRACT_ADDRESS) {
   console.error('Contract address not found in environment variables');
 }
-
-// Mock data for testing - replace with actual blockchain calls
-const mockNFTCards: Card[] = [
-  {
-    id: 'nft-1',
-    name: 'Fusion Strike',
-    description: 'A powerful fusion card combining attack and defense.',
-    networkOrigin: 'fusion',
-    cardType: 'attack',
-    rarity: 'rare',
-    energy: 2,
-    effects: [
-      { type: 'damage', value: 12, target: 'enemy' },
-      { type: 'block', value: 6, target: 'self' }
-    ],
-    isFusion: true,
-    parentCards: ['card-1', 'card-2'],
-    tokenId: '1'
-  },
-  {
-    id: 'nft-2',
-    name: 'Chain Link',
-    description: 'A fusion card that draws cards and gains energy.',
-    networkOrigin: 'fusion',
-    cardType: 'skill',
-    rarity: 'uncommon',
-    energy: 1,
-    effects: [
-      { type: 'draw', value: 2, target: 'self' },
-      { type: 'energy', value: 2, target: 'self' }
-    ],
-    isFusion: true,
-    parentCards: ['card-3', 'card-4'],
-    tokenId: '2'
-  }
-];
 
 export const useBlockchainService = () => {
   const { address, isConnected } = useAppKitAccount();
@@ -133,17 +91,40 @@ export const useBlockchainService = () => {
           const metadata = await contract.getCardMetadata(tokenId);
           console.log('Retrieved metadata for token:', tokenId, metadata);
           
+          // Generate appropriate effects based on card type
+          const effects: CardEffect[] = [];
+          if (metadata.cardType === 'attack') {
+            effects.push({
+              type: 'damage' as EffectType,
+              value: metadata.energy.toString() === '1' ? 6 : metadata.energy.toString() === '2' ? 9 : 12,
+              target: 'enemy' as EffectTarget
+            });
+          } else if (metadata.cardType === 'skill') {
+            effects.push({
+              type: 'block' as EffectType,
+              value: metadata.energy.toString() === '1' ? 5 : metadata.energy.toString() === '2' ? 8 : 12,
+              target: 'self' as EffectTarget
+            });
+          } else if (metadata.cardType === 'power') {
+            effects.push({
+              type: 'draw' as EffectType,
+              value: 1,
+              target: 'self' as EffectTarget
+            });
+          }
+          
+          // Add the card with complete metadata
           cards.push({
             id: tokenId.toString(),
-            name: metadata.name,
-            description: metadata.description,
-            networkOrigin: metadata.networkOrigin,
-            cardType: metadata.cardType,
-            rarity: metadata.rarity,
-            energy: metadata.energy,
-            effects: [], // TODO: Add effects based on card type
+            name: metadata.name || '',
+            description: `A ${metadata.cardType} card from ${metadata.networkOrigin}`,
+            networkOrigin: metadata.networkOrigin || 'unknown',
+            cardType: metadata.cardType || 'attack',
+            rarity: metadata.rarity || 'common',
+            energy: Number(metadata.energy) || 1,
+            effects: effects,
             isFusion: metadata.networkOrigin === 'fusion',
-            parentCards: metadata.parentCards,
+            parentCards: metadata.parentCards || [],
             tokenId: tokenId.toString()
           });
         } catch (error) {
@@ -169,190 +150,163 @@ export const useBlockchainService = () => {
       
       console.log('Fusing cards:', card1.name, 'and', card2.name);
       
-      // For direct fusion of cards (can be NFTs or regular cards)
+      // Combine effects from both cards, looking for interesting combinations
+      const combinedEffects = [...card1.effects];
+      card2.effects.forEach(effect2 => {
+        // If there's a matching effect type, enhance it
+        const matchingEffect = combinedEffects.find(e => e.type === effect2.type && e.target === effect2.target);
+        if (matchingEffect) {
+          // Increase the matching effect value, but apply a balance factor
+          matchingEffect.value = Math.round((matchingEffect.value + effect2.value) * 0.75);
+        } else {
+          // Otherwise add the new effect
+          combinedEffects.push({...effect2});
+        }
+      });
+      
+      // Create fusion metadata
+      const cardName = `${card1.name} + ${card2.name}`;
+      const cardDescription = `Fusion of ${card1.name} and ${card2.name}`;
+      const cardEnergy = Math.max(1, Math.floor((card1.energy + card2.energy) * 0.8)); // Slight discount for fusion
+      const cardRarity = card1.rarity === 'rare' || card2.rarity === 'rare' ? 'rare' : 
+                        card1.rarity === 'uncommon' || card2.rarity === 'uncommon' ? 'uncommon' : 'common';
+      
+      // Try to mint a real NFT on the blockchain
       try {
-        // Step 1: If cards don't have tokenId, first mint them individually
-        let tokenId1 = card1.tokenId ? BigInt(card1.tokenId) : undefined;
-        let tokenId2 = card2.tokenId ? BigInt(card2.tokenId) : undefined;
+        // Log attempt to mint a fusion card with the proper function signature
+        console.log('Attempting to mint fusion card with contract call...');
         
-        if (!tokenId1) {
-          console.log('Minting first card:', card1.name);
-          const tx1 = await contract.mintCard(
-            address, // player
-            card1.name,
-            card1.description || '',
-            card1.networkOrigin,
-            card1.cardType,
-            card1.rarity,
-            BigInt(card1.energy),
-            `ipfs://${card1.id}` // tokenURI
-          );
-          
-          console.log('First card minting transaction submitted');
-          const receipt1 = await tx1.wait();
-          console.log('First card minting transaction mined');
-          
-          if (receipt1.logs && receipt1.logs.length > 0) {
-            for (const log of receipt1.logs) {
-              try {
-                if (log.topics[0] === ethers.id("CardMinted(uint256,address,string)")) {
-                  const firstTopic = ethers.decodeBytes32String(log.topics[1]);
-                  tokenId1 = BigInt(firstTopic);
-                  console.log('First card minted with ID:', tokenId1);
-                  break;
-                }
-              } catch (e) {
-                console.log('Could not decode log topic:', e);
-              }
-            }
-          }
-          
-          if (!tokenId1) {
-            // If we couldn't get the token ID from events, guess based on nextTokenId - 1
-            tokenId1 = BigInt(0);
-            console.log('Using default token ID for first card:', tokenId1);
-          }
-        }
-        
-        if (!tokenId2) {
-          console.log('Minting second card:', card2.name);
-          const tx2 = await contract.mintCard(
-            address, // player
-            card2.name,
-            card2.description || '',
-            card2.networkOrigin,
-            card2.cardType,
-            card2.rarity,
-            BigInt(card2.energy),
-            `ipfs://${card2.id}` // tokenURI
-          );
-          
-          console.log('Second card minting transaction submitted');
-          const receipt2 = await tx2.wait();
-          console.log('Second card minting transaction mined');
-          
-          if (receipt2.logs && receipt2.logs.length > 0) {
-            for (const log of receipt2.logs) {
-              try {
-                if (log.topics[0] === ethers.id("CardMinted(uint256,address,string)")) {
-                  const firstTopic = ethers.decodeBytes32String(log.topics[1]);
-                  tokenId2 = BigInt(firstTopic);
-                  console.log('Second card minted with ID:', tokenId2);
-                  break;
-                }
-              } catch (e) {
-                console.log('Could not decode log topic:', e);
-              }
-            }
-          }
-          
-          if (!tokenId2) {
-            // If we couldn't get the token ID from events, guess based on nextTokenId - 1
-            tokenId2 = tokenId1 ? tokenId1 + BigInt(1) : BigInt(1);
-            console.log('Using default token ID for second card:', tokenId2);
-          }
-        }
-        
-        // Now we have both tokenIds (either original or newly minted)
-        console.log('Fusing cards with token IDs:', tokenId1, tokenId2);
-        
-        // Step 2: Now fuse the two cards
-        const tx = await contract.fuseCards(
-          [tokenId1, tokenId2],
-          `${card1.name} + ${card2.name}`,
-          `ipfs://${card1.id}-${card2.id}` // tokenURI
+        // Use the correct function signature from the contract
+        const tx = await contract.mintCard(
+          address, // player
+          cardName,
+          cardDescription,
+          'fusion', // networkOrigin
+          card1.cardType, // use the card type from the first card
+          cardRarity,
+          BigInt(cardEnergy),
+          `ipfs://${Date.now()}` // tokenURI
         );
         
-        console.log('Fusion transaction submitted:', tx.hash);
+        console.log('Fusion minting transaction submitted:', tx.hash);
         
         // Wait for transaction to be mined
         const receipt = await tx.wait();
-        console.log('Fusion transaction mined');
+        console.log('Fusion minting transaction mined');
         
         // Try to get the token ID from the event
-        let newTokenId: bigint | undefined;
+        let newTokenId: string = '';
         
         if (receipt.logs && receipt.logs.length > 0) {
-          for (const log of receipt.logs) {
-            try {
-              if (log.topics[0] === ethers.id("CardFused(uint256,uint256[])")) {
-                const firstTopic = ethers.decodeBytes32String(log.topics[1]);
-                newTokenId = BigInt(firstTopic);
-                console.log('Fusion card minted with ID:', newTokenId);
-                break;
-              }
-            } catch (e) {
-              console.log('Could not decode log topic:', e);
-            }
+          // Find CardMinted event to get token ID
+          const event = receipt.logs.find((log: any) => 
+            log.topics && log.topics[0] === ethers.id("CardMinted(uint256,address,string)")
+          );
+          
+          if (event && event.args) {
+            newTokenId = event.args[0].toString();
+            console.log('Fusion card minted with ID:', newTokenId);
           }
         }
         
         if (!newTokenId) {
-          // If we couldn't get the token ID from events, guess based on nextTokenId - 1
-          newTokenId = tokenId2 ? tokenId2 + BigInt(1) : BigInt(2);
-          console.log('Using default token ID for fusion card:', newTokenId);
+          // Fallback token ID
+          newTokenId = Date.now().toString();
+          console.log('Using fallback token ID for fusion card:', newTokenId);
         }
         
-        // Try to get metadata for the new card
+        // Return the new fusion card with combined attributes
+        const newCard: Card = {
+          id: `fusion-${newTokenId}`,
+          name: cardName,
+          description: cardDescription,
+          networkOrigin: 'fusion',
+          cardType: card1.cardType,
+          rarity: cardRarity,
+          energy: cardEnergy,
+          effects: combinedEffects,
+          isFusion: true,
+          parentCards: [card1.id, card2.id],
+          tokenId: newTokenId
+        };
+        
+        // Clear any cached NFT data in localStorage
         try {
-          const metadata = await contract.getCardMetadata(newTokenId);
-          console.log('Retrieved metadata for fusion card:', metadata);
-          
-          return {
-            id: newTokenId.toString(),
-            name: metadata.name,
-            description: `A fusion of ${card1.name} and ${card2.name}`,
-            networkOrigin: metadata.networkOrigin || 'fusion',
-            cardType: metadata.cardType || card1.cardType,
-            rarity: metadata.rarity || card1.rarity,
-            energy: Number(metadata.energy || Math.floor((card1.energy + card2.energy) / 2)),
-            effects: [],
-            isFusion: true,
-            parentCards: [card1.id, card2.id],
-            tokenId: newTokenId.toString()
-          };
-        } catch (metadataError) {
-          console.log('Error getting metadata, returning simulated card:', metadataError);
+          if (address) {
+            const cacheKey = `nft-cache-${address.toLowerCase()}`;
+            localStorage.removeItem(cacheKey);
+            console.log('Cleared NFT cache to ensure new cards appear');
+          }
+        } catch (e) {
+          console.warn('Failed to clear NFT cache:', e);
         }
-      } catch (contractError) {
-        console.error('Error in contract interactions:', contractError);
+        
+        return newCard;
+        
+      } catch (error) {
+        console.error('Error minting fusion card:', error);
+        // Fall back to simulated fusion if blockchain mint fails
       }
       
-      // Fallback to simulated card if anything goes wrong
-      // Use timestamp as a unique ID to ensure different IDs for each fusion
+      // If the blockchain minting fails, create a simulated fusion card
+      console.log('WARNING: Using simulated fusion card (not on blockchain)');
       const timestamp = Date.now().toString();
       const simulatedCard: Card = {
-        id: `fusion-${timestamp}`,
-        name: `${card1.name} + ${card2.name}`,
-        description: `A fusion of ${card1.name} and ${card2.name}`,
+        id: `simulated-fusion-${timestamp}`,
+        name: cardName,
+        description: cardDescription,
         networkOrigin: 'fusion',
         cardType: card1.cardType,
-        rarity: card1.rarity === 'rare' || card2.rarity === 'rare' ? 'rare' : 
-                card1.rarity === 'uncommon' || card2.rarity === 'uncommon' ? 'uncommon' : 'common',
-        energy: Math.max(1, Math.floor((card1.energy + card2.energy) / 2)),
-        effects: [],
+        rarity: cardRarity,
+        energy: cardEnergy,
+        effects: [], // TODO: Add effects based on card type
         isFusion: true,
         parentCards: [card1.id, card2.id],
         tokenId: timestamp
       };
       
       console.log('Created simulated fusion card:', simulatedCard);
+      
+      // Clear any cached NFT data in localStorage
+      try {
+        if (address) {
+          const cacheKey = `nft-cache-${address.toLowerCase()}`;
+          localStorage.removeItem(cacheKey);
+          console.log('Cleared NFT cache to ensure new cards appear');
+        }
+      } catch (e) {
+        console.warn('Failed to clear NFT cache:', e);
+      }
+      
       return simulatedCard;
+      
     } catch (error) {
       console.error('Error minting fusion card:', error);
       
-      // Return a simulated card even if everything fails
+      // Fallback to simulated fusion with attributes
       const timestamp = Date.now().toString();
+      
+      // Combine effects from both parent cards
+      const combinedEffects = [...card1.effects];
+      card2.effects.forEach(effect2 => {
+        const matchingEffect = combinedEffects.find(e => e.type === effect2.type && e.target === effect2.target);
+        if (matchingEffect) {
+          matchingEffect.value = Math.round((matchingEffect.value + effect2.value) * 0.75);
+        } else {
+          combinedEffects.push({...effect2});
+        }
+      });
+      
       return {
-        id: `fusion-${timestamp}`,
+        id: `simulated-fusion-${timestamp}`,
         name: `${card1.name} + ${card2.name}`,
         description: `A fusion of ${card1.name} and ${card2.name}`,
         networkOrigin: 'fusion',
         cardType: card1.cardType,
         rarity: card1.rarity === 'rare' || card2.rarity === 'rare' ? 'rare' : 
                 card1.rarity === 'uncommon' || card2.rarity === 'uncommon' ? 'uncommon' : 'common',
-        energy: Math.max(1, Math.floor((card1.energy + card2.energy) / 2)),
-        effects: [],
+        energy: Math.max(1, Math.floor((card1.energy + card2.energy) * 0.8)),
+        effects: combinedEffects,
         isFusion: true,
         parentCards: [card1.id, card2.id],
         tokenId: timestamp
@@ -413,42 +367,66 @@ export const useBlockchainService = () => {
           card.rarity,
           card.energy.toString(),
           [], // parentCards
-          `ipfs://${card.id}` // TODO: Upload actual metadata to IPFS
+          `ipfs://${card.id}`
         );
         
-        console.log('Transaction submitted:', tx.hash);
+        console.log('Minting transaction submitted:', tx.hash);
         
         // Wait for transaction to be mined
         const receipt = await tx.wait();
-        console.log('Transaction mined successfully:', receipt);
+        console.log('Minting transaction mined');
         
         // Try to get the token ID from the event
-        const event = receipt.logs?.find((log: any) => 
-          log.topics && log.topics[0] === ethers.id("CardMinted(uint256,address,string)")
-        );
+        let newTokenId: string = '';
         
-        if (event && event.args) {
-          const newTokenId = event.args[0];
-          console.log('New card minted with token ID:', newTokenId);
+        if (receipt.logs && receipt.logs.length > 0) {
+          // Find CardMinted event to get token ID
+          const event = receipt.logs.find((log: any) => 
+            log.topics && log.topics[0] === ethers.id("CardMinted(uint256,address,string)")
+          );
           
-          return {
-            ...card,
-            id: newTokenId.toString(),
-            tokenId: newTokenId.toString()
-          };
+          if (event && event.args) {
+            newTokenId = event.args[0].toString();
+            console.log('Card minted with ID:', newTokenId);
+          }
         }
         
-        // If we couldn't get the token ID from the event, return the original card
-        return card;
-      } catch (error) {
-        console.error('Error in contract call:', error);
-        // Return simulated card
-        const timestamp = Date.now().toString();
-        return {
-          ...card,
-          id: `simulated-${timestamp}`,
-          tokenId: timestamp
+        if (!newTokenId) {
+          // Fallback token ID
+          newTokenId = Date.now().toString();
+          console.log('Using fallback token ID for card:', newTokenId);
+        }
+        
+        // Return the new card with minted attributes
+        const newCard: Card = {
+          id: newTokenId,
+          name: card.name,
+          description: card.description,
+          networkOrigin: card.networkOrigin,
+          cardType: card.cardType,
+          rarity: card.rarity,
+          energy: card.energy,
+          effects: card.effects,
+          isFusion: card.isFusion,
+          parentCards: card.parentCards,
+          tokenId: newTokenId
         };
+        
+        // Clear any cached NFT data in localStorage
+        try {
+          if (address) {
+            const cacheKey = `nft-cache-${address.toLowerCase()}`;
+            localStorage.removeItem(cacheKey);
+            console.log('Cleared NFT cache to ensure new cards appear');
+          }
+        } catch (e) {
+          console.warn('Failed to clear NFT cache:', e);
+        }
+        
+        return newCard;
+      } catch (error) {
+        console.error('Error minting single card:', error);
+        return null;
       }
     } catch (error) {
       console.error('Error minting single card:', error);
@@ -456,10 +434,27 @@ export const useBlockchainService = () => {
     }
   };
 
+  // Clear NFT cache to force a fresh load from the blockchain
+  const clearNFTCache = () => {
+    try {
+      if (address) {
+        const cacheKey = `nft-cache-${address.toLowerCase()}`;
+        localStorage.removeItem(cacheKey);
+        console.log('NFT cache cleared for address:', address);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error clearing NFT cache:', error);
+      return false;
+    }
+  };
+
   return {
     fetchNFTCards,
     mintFusionCard,
     checkGameServerAuthorization,
-    mintSingleCard
+    mintSingleCard,
+    clearNFTCache
   };
-}; 
+};

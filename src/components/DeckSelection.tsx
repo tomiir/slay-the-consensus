@@ -254,7 +254,11 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
       if (prev.find(c => c.id === card.id)) {
         return prev.filter(c => c.id !== card.id);
       }
-      if (prev.length < 3) { // Allow up to 3 NFT cards
+      
+      // Limit selected NFT cards based on available slots in the deck
+      // A deck should have exactly 10 cards total
+      const maxNFTCards = 10;
+      if (prev.length < maxNFTCards) {
         return [...prev, card];
       }
       return prev;
@@ -264,15 +268,25 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
   const getFinalDeck = (): Card[] => {
     if (!selectedNetwork) return [];
     
-    // Create a new array with the starter deck cards
+    // Get starter deck cards
     const starterDeck = starterDecks[selectedNetwork].cards.map(card => ({...card}));
-    const nftCardIds = new Set(selectedNFTCards.map(card => card.id));
     
-    // Filter out cards that are being replaced by NFT cards
-    const finalDeck = starterDeck.filter(card => !nftCardIds.has(card.id));
+    // Limit the total deck size to 10 cards
+    // If there are NFT cards selected, replace some of the starter deck cards
+    const maxDeckSize = 10;
     
-    // Add the selected NFT cards
-    return [...finalDeck, ...selectedNFTCards];
+    // If we have NFT cards, replace starter cards with them (up to the full deck)
+    if (selectedNFTCards.length > 0) {
+      // Take enough starter cards to fill the remaining slots after NFT cards
+      const starterCardsToKeep = Math.max(0, maxDeckSize - selectedNFTCards.length);
+      const limitedStarterDeck = starterDeck.slice(0, starterCardsToKeep);
+      
+      // Combine with selected NFT cards
+      return [...limitedStarterDeck, ...selectedNFTCards];
+    }
+    
+    // If no NFT cards, just take the first 10 cards from the starter deck
+    return starterDeck.slice(0, maxDeckSize);
   };
 
   const handleStartGame = () => {
@@ -307,7 +321,7 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
           <NFTCollection>
             <NFTTitle>
               Your NFT Cards
-              <span>(Select up to 3 cards to replace in your deck)</span>
+              <span>(Select up to {10 - (selectedNetwork ? Math.min(10, starterDecks[selectedNetwork].cards.length) : 0)} cards to include in your deck)</span>
             </NFTTitle>
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>

@@ -17,8 +17,8 @@ export class BattleSystem {
         effects: {}
       },
       enemy: {
-        health: 40,
-        maxHealth: 40,
+        health: 20,
+        maxHealth: 20,
         block: 0,
         energy: 0,
         maxEnergy: 0,

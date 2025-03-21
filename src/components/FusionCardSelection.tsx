@@ -101,7 +101,7 @@ const CardContainer = styled.div<{ selected?: boolean, rarity: string }>`
   }
 `;
 
-const SelectButton = styled.button`
+const SelectButton = styled.button<{ isSelected?: boolean }>`
   padding: 0.5rem 1rem;
   background: #ffd700;
   color: #1a1a1a;
@@ -113,7 +113,7 @@ const SelectButton = styled.button`
   left: 50%;
   transform: translateX(-50%);
   font-weight: bold;
-  opacity: ${props => props.selected ? 1 : 0};
+  opacity: ${props => props.isSelected ? 1 : 0};
   transition: opacity 0.3s ease;
 `;
 
@@ -173,7 +173,11 @@ export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, 
   // Randomly select 3 cards from the deck
   const availableCards = React.useMemo(() => {
     const shuffled = [...deck].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3);
+    // Ensure cards have valid effects array
+    return shuffled.slice(0, 3).map(card => ({
+      ...card,
+      effects: card.effects || []
+    }));
   }, [deck]);
 
   const handleCardSelect = (card: Card) => {
@@ -193,6 +197,7 @@ export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, 
 
     setIsMinting(true);
     try {
+      console.log("Selected cards for fusion:", selectedCards);
       const newCard = await mintFusionCard(selectedCards[0], selectedCards[1]);
       if (newCard) {
         console.log('Successfully minted fusion card:', newCard);
@@ -228,14 +233,18 @@ export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, 
                 <div className="rarity">{card.rarity}</div>
                 <div className="description">{card.description}</div>
                 <div className="effects">
-                  {card.effects.map((effect, index) => (
-                    <span key={index} className="effect">
-                      {effect.type}: {effect.value}
-                    </span>
-                  ))}
+                  {card.effects && card.effects.length > 0 ? (
+                    card.effects.map((effect, index) => (
+                      <span key={index} className="effect">
+                        {effect.type}: {effect.value} ({effect.target})
+                      </span>
+                    ))
+                  ) : (
+                    <span className="effect">No effects</span>
+                  )}
                 </div>
               </CardContainer>
-              <SelectButton selected={isSelected}>
+              <SelectButton isSelected={isSelected}>
                 {isSelected ? 'Selected' : 'Select'}
               </SelectButton>
             </CardWrapper>
