@@ -125,7 +125,10 @@ export const useBlockchainService = () => {
             effects: effects,
             isFusion: metadata.networkOrigin === 'fusion',
             parentCards: metadata.parentCards || [],
-            tokenId: tokenId.toString()
+            tokenId: tokenId.toString(),
+            image: metadata.networkOrigin === 'fusion' 
+              ? '/assets/images/cards/fusion.png'
+              : `/assets/images/cards/${metadata.networkOrigin}_${metadata.cardType}.png`
           });
         } catch (error) {
           console.error('Error fetching metadata for token:', tokenId, error);
@@ -227,7 +230,8 @@ export const useBlockchainService = () => {
           effects: combinedEffects,
           isFusion: true,
           parentCards: [card1.id, card2.id],
-          tokenId: newTokenId
+          tokenId: newTokenId,
+          image: '/assets/images/cards/fusion.png'
         };
         
         // Clear any cached NFT data in localStorage
@@ -262,7 +266,8 @@ export const useBlockchainService = () => {
         effects: [], // TODO: Add effects based on card type
         isFusion: true,
         parentCards: [card1.id, card2.id],
-        tokenId: timestamp
+        tokenId: timestamp,
+        image: '/assets/images/cards/fusion.png'
       };
       
       console.log('Created simulated fusion card:', simulatedCard);
@@ -309,7 +314,8 @@ export const useBlockchainService = () => {
         effects: combinedEffects,
         isFusion: true,
         parentCards: [card1.id, card2.id],
-        tokenId: timestamp
+        tokenId: timestamp,
+        image: '/assets/images/cards/fusion.png'
       };
     }
   };
@@ -409,7 +415,10 @@ export const useBlockchainService = () => {
           effects: card.effects,
           isFusion: card.isFusion,
           parentCards: card.parentCards,
-          tokenId: newTokenId
+          tokenId: newTokenId,
+          image: card.networkOrigin === 'fusion' 
+            ? '/assets/images/cards/fusion.png'
+            : `/assets/images/cards/${card.networkOrigin}_${card.cardType}.png`
         };
         
         // Clear any cached NFT data in localStorage

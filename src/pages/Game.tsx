@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '@reown/appkit-ui/jsx';
 import { Battle } from '../components/Battle';
 import { DeckSelection } from '../components/DeckSelection';
 import { FusionCardSelection } from '../components/FusionCardSelection';
-import { Card } from '../game/core/types';
+import { Card, Deck } from '../game/core/types';
 import { useAppKitAccount } from '@reown/appkit/react';
 
 const GameContainer = styled.div`
@@ -29,14 +29,31 @@ const ConnectMessage = styled.p`
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { address, isConnected } = useAppKitAccount();
   const [selectedDeck, setSelectedDeck] = useState<Card[] | null>(null);
   const [showFusionSelection, setShowFusionSelection] = useState(false);
   const [battleResult, setBattleResult] = useState<'win' | 'lose' | null>(null);
 
-  const handleDeckSelect = (deck: Card[]) => {
-    setSelectedDeck(deck);
-  };
+  // Get deck from location state or localStorage
+  useEffect(() => {
+    // Try loading from location state first
+    if (location.state && location.state.deckId) {
+      // Load from localStorage using the deckId
+      const savedDeckJson = localStorage.getItem('selectedDeck');
+      if (savedDeckJson) {
+        try {
+          const savedDeck = JSON.parse(savedDeckJson) as Deck;
+          if (savedDeck.id === location.state.deckId) {
+            setSelectedDeck(savedDeck.cards);
+            console.log("Deck loaded from localStorage:", savedDeck);
+          }
+        } catch (error) {
+          console.error("Error parsing saved deck:", error);
+        }
+      }
+    }
+  }, [location.state]);
 
   const handleBattleComplete = (result: 'win' | 'lose') => {
     setBattleResult(result);
@@ -51,6 +68,10 @@ const Game: React.FC = () => {
     setBattleResult(null);
   };
 
+  const handleReturn = () => {
+    navigate('/');
+  };
+
   if (!isConnected) {
     return (
       <div style={{ 
@@ -63,7 +84,7 @@ const Game: React.FC = () => {
         textAlign: 'center',
         padding: '2rem'
       }}>
-        <h1>Welcome to Slay the Consensus</h1>
+        <h1>Welcome to Crypto Spire</h1>
         <p>Please connect your wallet to start playing!</p>
       </div>
     );
@@ -74,7 +95,8 @@ const Game: React.FC = () => {
   }
 
   if (!selectedDeck) {
-    return <DeckSelection onStartGame={handleDeckSelect} />;
+    // The updated DeckSelection handles its own navigation
+    return <DeckSelection />;
   }
 
   return <Battle deck={selectedDeck} onComplete={handleBattleComplete} />;

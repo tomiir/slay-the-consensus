@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Card } from '../game/core/types';
 import { useBlockchainService } from '../services/blockchain';
+import { GameCard } from './layout/GameCard';
 
 const Container = styled.div`
   display: flex;
@@ -10,15 +11,19 @@ const Container = styled.div`
   padding: 2rem;
   gap: 2rem;
   min-height: 100vh;
-  background: #1a1a1a;
+  background: #121212;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(28, 54, 83, 0.2) 0%, transparent 25%),
+    radial-gradient(circle at 80% 70%, rgba(75, 19, 79, 0.2) 0%, transparent 25%);
 `;
 
 const Title = styled.h1`
   color: #ffd700;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   text-align: center;
   font-size: 2.5rem;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  letter-spacing: 1px;
 `;
 
 const Description = styled.p`
@@ -26,102 +31,29 @@ const Description = styled.p`
   text-align: center;
   max-width: 600px;
   margin-bottom: 2rem;
+  line-height: 1.6;
 `;
 
 const CardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 3rem;
   max-width: 1200px;
   width: 100%;
+  padding: 1rem;
 `;
 
 const CardWrapper = styled.div<{ selected?: boolean }>`
   position: relative;
-  cursor: pointer;
-  transform: ${props => props.selected ? 'translateY(-10px)' : 'none'};
-  transition: transform 0.3s ease;
-`;
-
-const CardContainer = styled.div<{ selected?: boolean, rarity: string }>`
-  background: ${props => props.selected ? '#3c3c3c' : '#2c2c2c'};
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: ${props => props.selected ? '2px solid #ffd700' : '1px solid #444'};
-  box-shadow: ${props => props.selected ? '0 0 20px rgba(255, 215, 0, 0.3)' : 'none'};
-  position: relative;
-
-  h3 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-  }
-
-  .energy {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: #ffd700;
-    color: #1a1a1a;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-weight: bold;
-  }
-
-  .rarity {
-    color: ${props => {
-      switch (props.rarity) {
-        case 'rare': return '#ffd700';
-        case 'uncommon': return '#c0c0c0';
-        default: return '#b87333';
-      }
-    }};
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .description {
-    color: #ccc;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-  }
-
-  .effects {
-    margin-top: 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .effect {
-    background: #444;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    color: #ccc;
-  }
-`;
-
-const SelectButton = styled.button<{ isSelected?: boolean }>`
-  padding: 0.5rem 1rem;
-  background: #ffd700;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  position: absolute;
-  bottom: -2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-weight: bold;
-  opacity: ${props => props.isSelected ? 1 : 0};
-  transition: opacity 0.3s ease;
+  display: flex;
+  justify-content: center;
 `;
 
 const MintButton = styled.button`
   margin-top: 4rem;
   padding: 1rem 3rem;
-  background: #ffd700;
-  color: #1a1a1a;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  color: #121212;
   border: none;
   border-radius: 8px;
   font-size: 1.2rem;
@@ -129,18 +61,43 @@ const MintButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: 0.5s;
+  }
 
   &:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+    &:before {
+      left: 100%;
+    }
   }
 
   &:disabled {
-    background: #666;
+    background: #444;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+    &:before {
+      display: none;
+    }
   }
 `;
 
@@ -152,11 +109,59 @@ const LoadingSpinner = styled.div`
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
+  margin: 2rem 0;
 
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
+  }
+`;
+
+const FusionPreview = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(30, 30, 30, 0.8);
+  padding: 2rem;
+  border-radius: 15px;
+  margin-top: 3rem;
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.3);
+  border: 1px solid rgba(138, 43, 226, 0.5);
+  transition: all 0.3s ease;
+  max-width: 900px;
+  width: 100%;
+`;
+
+const FusionTitle = styled.h2`
+  color: #9966cc;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(153, 102, 204, 0.5);
+`;
+
+const FusionCards = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  position: relative;
+  width: 100%;
+  
+  &:after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    z-index: 2;
   }
 `;
 
@@ -168,43 +173,34 @@ interface FusionCardSelectionProps {
 export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, onComplete }) => {
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [isMinting, setIsMinting] = useState(false);
+  const [mintedCard, setMintedCard] = useState<Card | null>(null);
   const { mintFusionCard } = useBlockchainService();
 
-  // Randomly select 3 cards from the deck
-  const availableCards = React.useMemo(() => {
-    const shuffled = [...deck].sort(() => Math.random() - 0.5);
-    // Ensure cards have valid effects array
-    return shuffled.slice(0, 3).map(card => ({
-      ...card,
-      effects: card.effects || []
-    }));
-  }, [deck]);
-
   const handleCardSelect = (card: Card) => {
-    setSelectedCards(prev => {
-      if (prev.find(c => c.id === card.id)) {
-        return prev.filter(c => c.id !== card.id);
+    if (selectedCards.includes(card)) {
+      setSelectedCards(selectedCards.filter(c => c !== card));
+    } else {
+      if (selectedCards.length < 2) {
+        setSelectedCards([...selectedCards, card]);
       }
-      if (prev.length < 2) {
-        return [...prev, card];
-      }
-      return prev;
-    });
+    }
   };
 
   const handleMint = async () => {
-    if (selectedCards.length !== 2) return;
+    if (selectedCards.length !== 2 || isMinting) return;
 
     setIsMinting(true);
     try {
-      console.log("Selected cards for fusion:", selectedCards);
-      const newCard = await mintFusionCard(selectedCards[0], selectedCards[1]);
-      if (newCard) {
-        console.log('Successfully minted fusion card:', newCard);
+      const fusedCard = await mintFusionCard(selectedCards[0], selectedCards[1]);
+      console.log('Successfully minted fusion card:', fusedCard);
+      setMintedCard(fusedCard);
+      
+      // Short delay to see the minted card before completion
+      setTimeout(() => {
         onComplete();
-      }
+      }, 3000);
     } catch (error) {
-      console.error('Failed to mint fusion card:', error);
+      console.error('Error minting fusion card:', error);
     } finally {
       setIsMinting(false);
     }
@@ -212,59 +208,63 @@ export const FusionCardSelection: React.FC<FusionCardSelectionProps> = ({ deck, 
 
   return (
     <Container>
-      <Title>Create Your Fusion Card</Title>
+      <Title>Create Fusion Card</Title>
       <Description>
-        Select 2 cards from your run to create a powerful fusion card NFT.
-        This card will be available in future runs!
+        Select two cards from your deck to create a powerful fusion card. 
+        Fusion cards combine the effects of both parent cards and are minted as NFTs on the blockchain.
       </Description>
 
-      <CardGrid>
-        {availableCards.map(card => {
-          const isSelected = selectedCards.some(c => c.id === card.id);
-          return (
-            <CardWrapper key={card.id} selected={isSelected}>
-              <CardContainer
-                onClick={() => handleCardSelect(card)}
-                selected={isSelected}
-                rarity={card.rarity}
-              >
-                <div className="energy">{card.energy}</div>
-                <h3>{card.name}</h3>
-                <div className="rarity">{card.rarity}</div>
-                <div className="description">{card.description}</div>
-                <div className="effects">
-                  {card.effects && card.effects.length > 0 ? (
-                    card.effects.map((effect, index) => (
-                      <span key={index} className="effect">
-                        {effect.type}: {effect.value} ({effect.target})
-                      </span>
-                    ))
-                  ) : (
-                    <span className="effect">No effects</span>
-                  )}
-                </div>
-              </CardContainer>
-              <SelectButton isSelected={isSelected}>
-                {isSelected ? 'Selected' : 'Select'}
-              </SelectButton>
-            </CardWrapper>
-          );
-        })}
-      </CardGrid>
-
-      <MintButton
-        onClick={handleMint}
-        disabled={selectedCards.length !== 2 || isMinting}
-      >
-        {isMinting ? (
-          <>
-            <LoadingSpinner />
-            <span style={{ marginLeft: '1rem' }}>Minting...</span>
-          </>
-        ) : (
-          'Mint Fusion Card'
-        )}
-      </MintButton>
+      {mintedCard ? (
+        <FusionPreview>
+          <FusionTitle>Fusion Successful!</FusionTitle>
+          <GameCard card={mintedCard} />
+        </FusionPreview>
+      ) : isMinting ? (
+        <>
+          <FusionPreview>
+            <FusionTitle>Creating Fusion...</FusionTitle>
+            <FusionCards>
+              {selectedCards.map((card, index) => (
+                <GameCard key={index} card={card} />
+              ))}
+            </FusionCards>
+          </FusionPreview>
+          <LoadingSpinner />
+        </>
+      ) : (
+        <>
+          {selectedCards.length > 0 && (
+            <FusionPreview>
+              <FusionTitle>Selected Cards</FusionTitle>
+              <FusionCards>
+                {selectedCards.map((card, index) => (
+                  <GameCard key={index} card={card} />
+                ))}
+              </FusionCards>
+            </FusionPreview>
+          )}
+          
+          <CardGrid>
+            {deck.map((card, index) => (
+              <CardWrapper key={index} selected={selectedCards.includes(card)}>
+                <GameCard 
+                  card={card} 
+                  selected={selectedCards.includes(card)}
+                  onClick={() => handleCardSelect(card)}
+                  showSelectButton={true}
+                />
+              </CardWrapper>
+            ))}
+          </CardGrid>
+          
+          <MintButton 
+            disabled={selectedCards.length !== 2} 
+            onClick={handleMint}
+          >
+            Fuse Cards
+          </MintButton>
+        </>
+      )}
     </Container>
   );
 }; 
