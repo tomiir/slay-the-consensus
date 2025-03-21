@@ -1,7 +1,7 @@
 import { Card } from '../game/core/types';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { ethers } from 'ethers';
-import FusionCardNFT from '../contracts/artifacts/FusionCardNFT.json';
+import FusionCardNFT from '../contracts/artifacts/src/contracts/FusionCardNFT.sol/FusionCardNFT.json';
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '';
 

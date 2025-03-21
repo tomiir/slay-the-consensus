@@ -10,12 +10,16 @@ const DeckSelectionContainer = styled.div`
   align-items: center;
   padding: 2rem;
   gap: 2rem;
+  min-height: 100vh;
+  background: #1a1a1a;
 `;
 
 const Title = styled.h1`
   color: #ffd700;
   margin-bottom: 2rem;
   text-align: center;
+  font-size: 2.5rem;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 `;
 
 const DeckOptions = styled.div`
@@ -28,14 +32,26 @@ const DeckOptions = styled.div`
 
 const DeckCard = styled.div<{ selected?: boolean }>`
   background: ${props => props.selected ? '#3c3c3c' : '#2c2c2c'};
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 2rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  border: ${props => props.selected ? '2px solid #ffd700' : 'none'};
+  transition: all 0.3s ease;
+  border: ${props => props.selected ? '2px solid #ffd700' : '1px solid #444'};
+  box-shadow: ${props => props.selected ? '0 0 20px rgba(255, 215, 0, 0.3)' : 'none'};
 
   &:hover {
     transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  h2 {
+    color: #ffd700;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #ccc;
+    margin: 0.5rem 0;
   }
 `;
 
@@ -43,29 +59,91 @@ const NFTCollection = styled.div`
   margin-top: 2rem;
   width: 100%;
   max-width: 1200px;
+  background: #2c2c2c;
+  border-radius: 12px;
+  padding: 2rem;
 `;
 
 const NFTTitle = styled.h2`
   color: #ffd700;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  span {
+    font-size: 1rem;
+    color: #888;
+  }
 `;
 
 const NFTCards = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
 `;
 
-const NFTCard = styled.div<{ selected?: boolean }>`
-  background: ${props => props.selected ? '#3c3c3c' : '#2c2c2c'};
+const NFTCard = styled.div<{ selected?: boolean, rarity: string }>`
+  background: ${props => props.selected ? '#3c3c3c' : '#1a1a1a'};
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1.5rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  border: ${props => props.selected ? '2px solid #ffd700' : 'none'};
+  transition: all 0.3s ease;
+  border: ${props => props.selected ? '2px solid #ffd700' : '1px solid #444'};
+  position: relative;
 
   &:hover {
     transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  h3 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+  }
+
+  .energy {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #ffd700;
+    color: #1a1a1a;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+
+  .rarity {
+    color: ${props => {
+      switch (props.rarity) {
+        case 'rare': return '#ffd700';
+        case 'uncommon': return '#c0c0c0';
+        default: return '#b87333';
+      }
+    }};
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .description {
+    color: #ccc;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .effects {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .effect {
+    background: #444;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #ccc;
   }
 `;
 
@@ -73,38 +151,70 @@ const SelectedDeck = styled.div`
   margin-top: 2rem;
   width: 100%;
   max-width: 1200px;
+  background: #2c2c2c;
+  border-radius: 12px;
+  padding: 2rem;
 `;
 
 const SelectedDeckTitle = styled.h2`
   color: #ffd700;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  span {
+    font-size: 1rem;
+    color: #888;
+  }
 `;
 
 const SelectedDeckCards = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
 `;
 
 const StartButton = styled.button`
   margin-top: 2rem;
-  padding: 1rem 2rem;
+  padding: 1rem 3rem;
   background: #ffd700;
   color: #1a1a1a;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1.2rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 
   &:hover {
     transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
   }
 
   &:disabled {
     background: #666;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
+  }
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 3px solid #ffd700;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -133,7 +243,7 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
     };
 
     loadNFTCards();
-  }, [fetchNFTCards]);
+  }, []);
 
   const handleNetworkSelect = (network: NetworkType) => {
     setSelectedNetwork(network);
@@ -154,11 +264,14 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
   const getFinalDeck = (): Card[] => {
     if (!selectedNetwork) return [];
     
-    const starterDeck = [...starterDecks[selectedNetwork].cards];
-    const nftCardIds = selectedNFTCards.map(card => card.id);
+    // Create a new array with the starter deck cards
+    const starterDeck = starterDecks[selectedNetwork].cards.map(card => ({...card}));
+    const nftCardIds = new Set(selectedNFTCards.map(card => card.id));
     
-    // Replace up to 3 cards from the starter deck with NFT cards
-    const finalDeck = starterDeck.filter(card => !nftCardIds.includes(card.id));
+    // Filter out cards that are being replaced by NFT cards
+    const finalDeck = starterDeck.filter(card => !nftCardIds.has(card.id));
+    
+    // Add the selected NFT cards
     return [...finalDeck, ...selectedNFTCards];
   };
 
@@ -183,7 +296,7 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
             >
               <h2>{deck.name}</h2>
               <p>{deck.description}</p>
-              <p>Cards: {deck.cards.length}</p>
+              <p>Starting Cards: {deck.cards.length}</p>
             </DeckCard>
           )
         ))}
@@ -192,9 +305,15 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
       {selectedNetwork && (
         <>
           <NFTCollection>
-            <NFTTitle>Your NFT Cards</NFTTitle>
+            <NFTTitle>
+              Your NFT Cards
+              <span>(Select up to 3 cards to replace in your deck)</span>
+            </NFTTitle>
             {isLoading ? (
-              <p>Loading your NFT cards...</p>
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <LoadingSpinner />
+                <p style={{ color: '#ccc', marginTop: '1rem' }}>Loading your NFT cards...</p>
+              </div>
             ) : nftCards.length > 0 ? (
               <NFTCards>
                 {nftCards.map(card => (
@@ -202,32 +321,57 @@ export const DeckSelection: React.FC<DeckSelectionProps> = ({ onStartGame }) => 
                     key={card.id}
                     onClick={() => handleNFTCardSelect(card)}
                     selected={selectedNFTCards.some(c => c.id === card.id)}
+                    rarity={card.rarity}
                   >
+                    <div className="energy">{card.energy}</div>
                     <h3>{card.name}</h3>
-                    <p>Energy: {card.energy}</p>
-                    <p>{card.description}</p>
+                    <div className="rarity">{card.rarity}</div>
+                    <div className="description">{card.description}</div>
+                    <div className="effects">
+                      {card.effects.map((effect, index) => (
+                        <span key={index} className="effect">
+                          {effect.type}: {effect.value}
+                        </span>
+                      ))}
+                    </div>
                   </NFTCard>
                 ))}
               </NFTCards>
             ) : (
-              <p>No NFT cards found. Complete runs to earn fusion cards!</p>
+              <p style={{ color: '#ccc', textAlign: 'center', padding: '2rem' }}>
+                No NFT cards found. Complete runs to earn fusion cards!
+              </p>
             )}
           </NFTCollection>
 
           <SelectedDeck>
-            <SelectedDeckTitle>Your Final Deck</SelectedDeckTitle>
+            <SelectedDeckTitle>
+              Your Final Deck
+              <span>({getFinalDeck().length} cards)</span>
+            </SelectedDeckTitle>
             <SelectedDeckCards>
               {getFinalDeck().map(card => (
-                <NFTCard key={card.id}>
+                <NFTCard key={card.id} rarity={card.rarity}>
+                  <div className="energy">{card.energy}</div>
                   <h3>{card.name}</h3>
-                  <p>Energy: {card.energy}</p>
-                  <p>{card.description}</p>
+                  <div className="rarity">{card.rarity}</div>
+                  <div className="description">{card.description}</div>
+                  <div className="effects">
+                    {card.effects.map((effect, index) => (
+                      <span key={index} className="effect">
+                        {effect.type}: {effect.value}
+                      </span>
+                    ))}
+                  </div>
                 </NFTCard>
               ))}
             </SelectedDeckCards>
           </SelectedDeck>
 
-          <StartButton onClick={handleStartGame}>
+          <StartButton 
+            onClick={handleStartGame}
+            disabled={getFinalDeck().length === 0}
+          >
             Start Game
           </StartButton>
         </>
